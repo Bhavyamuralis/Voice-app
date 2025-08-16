@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Expense Recorder</title>
+
+<!-- PWA Manifest inline -->
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVm9pY2UgRXhwZW5zZSBSZWNvcmRlciIsInNob3J0X25hbWUiOiJWb2ljZUV4cGVuc2UiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmOWY5ZjkiLCJ0aGVtZV9jb2xvciI6IiMwMDdiZmYiLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9wbmc7YmFzZTY0LEkVBFRJT0MiLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn0seyJzcmMiOiJkYXRhOmltYWdlL3BuZztiYXNlNjQsSURFTiIsInNpemVzIjoiNTI4eDUyOCIsInR5cGUiOiJpbWFnZS9wbmcifV19">
+
+<style>
+body { font-family: Arial, sans-serif; margin:20px; background:#f9f9f9; }
+button { padding:10px 20px; margin:5px; border:none; border-radius:6px; background:#007bff; color:#fff; font-size:16px; }
+button:disabled { background:#aaa; }
+table { border-collapse: collapse; width:100%; margin-top:20px; background:#fff; }
+th,td { border:1px solid #ddd; padding:8px; text-align:center; }
+th { background:#007bff; color:#fff; }
+.total { font-weight:bold; background:#eee; }
+audio { width: 120px; }
+</style>
+</head>
+<body>
+<h2>🎤 Voice Expense Recorder</h2>
+<button id="startBtn">🎙 Start Recording</button>
+<button id="stopBtn" disabled>⏹ Stop Recording</button>
+<button id="exportBtn">📤 Export CSV</button>
+
+<table id="dataTable">
+<thead><tr><th>Description</th><th>Amount</th><th>Audio</th></tr></thead>
+<tbody></tbody>
+<tfoot><tr class="total"><td>Total</td><td id="totalAmount">0</td><td></td></tr></tfoot>
+</table>
+
+<script>
+// --- Local DB ---
+let records = JSON.parse(localStorage.getItem("records") || "[]");
+let recognition, mediaRecorder, audioChunks = [], currentAudioURL = null;
+renderTable();
+
+// --- Speech Recognition ---
+if('webkitSpeechRecognition' in window){
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous=false; recognition.interimResults=false; recognition.lang="en-IN";
+  recognition.onresult = function(event){
+    let transcript = event.results[0][0].transcript;
+    let amount = extractAmount(transcript);
+    let desc = transcript.replace(/\d+/g,'').trim();
+    saveRecord(desc, amount, currentAudioURL);
+    currentAudioURL = null;
+  };
+}else{ alert("Speech Recognition not supported"); }
+
+// --- Start Recording ---
+document.getElementById("startBtn").onclick = async function(){
+  audioChunks=[]; currentAudioURL=null;
+  let stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    let blob = new Blob(audioChunks,{type:'audio/webm'});
+    currentAudioURL = URL.createObjectURL(blob);
+  };
+  mediaRecorder.start();
+  recognition.start();
+  this.disabled = true; document.getElementById("stopBtn").disabled=false;
+};
+
+// --- Stop Recording ---
+document.getElementById("stopBtn").onclick = function(){
+  recognition.stop();
+  mediaRecorder.stop();
+  this.disabled = true; document.getElementById("startBtn").disabled=false;
+};
+
+// --- Save Record ---
+function saveRecord(desc, amount, audioURL){
+  if(!desc && !amount) return;
+  records.push({desc, amount, audioURL});
+  localStorage.setItem("records", JSON.stringify(records));
+  renderTable();
+}
+
+// --- Render Table ---
+function renderTable(){
+  let tbody = document.querySelector("#dataTable tbody");
+  tbody.innerHTML=""; let total=0;
+  records.forEach(r=>{
+    let tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r.desc}</td><td>${r.amount}</td>
+      <td>${r.audioURL?'<audio controls src="'+r.audioURL+'"></audio>':''}</td>`;
+    tbody.appendChild(tr);
+    total += Number(r.amount)||0;
+  });
+  document.getElementById("totalAmount").innerText=total;
+}
+
+// --- Export CSV ---
+document.getElementById("exportBtn").onclick = function(){
+  let csv="Description,Amount\n";
+  records.forEach(r=>{csv+=`"${r.desc}",${r.amount}\n`;});
+  let blob=new Blob([csv],{type:"text/csv"});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement("a"); a.href=url; a.download="records.csv"; a.click();
+};
+
+// --- Words to Numbers ---
+function extractAmount(text){
+  let match=text.match(/\d+/); if(match) return match[0];
+  const words={"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,
+  "eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,"sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19,
+  "twenty":20,"thirty":30,"forty":40,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90,
+  "hundred":100,"thousand":1000};
+  let tokens=text.toLowerCase().split(/\s+/), num=0, temp=0;
+  tokens.forEach(w=>{
+    if(words[w]){ if(w=="hundred") temp*=100; else if(w=="thousand"){temp*=1000; num+=temp; temp=0;} else temp+=words[w]; }
+  });
+  num+=temp; return num||"";
+}
+
+// --- Inline Service Worker ---
+if('serviceWorker' in navigator){
+  const swCode = `
+  const cacheName='voice-expense-cache-v1';
+  const assets = ['./'];
+  self.addEventListener('install',e=>{e.waitUntil(caches.open(cacheName).then(c=>c.addAll(assets)));});
+  self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});
+  `;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const swURL = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swURL).then(()=>console.log("SW Registered"));
+}
+</script>
+</body>
+</html>
