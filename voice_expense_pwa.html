@@ -162,12 +162,12 @@ function exportCSV(){
   };
 }
 
-// Stable Voice input
+// Telugu Voice input
 function startVoiceInput() {
   if (!('webkitSpeechRecognition' in window)) return alert("Voice not supported!");
 
   let recognition = new webkitSpeechRecognition();
-  recognition.lang = "en-US";
+  recognition.lang = "te-IN"; // Telugu language
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
   recognition.continuous = false;
@@ -181,12 +181,12 @@ function startVoiceInput() {
     console.log("Recognized speech:", speech);
 
     // Extract first number as amount, rest as description
-    let amountMatch = speech.match(/([\d.,]+)/);
+    let amountMatch = speech.match(/([\d]+)/);
     let amount = "";
     let description = "";
 
     if (amountMatch) {
-      amount = amountMatch[1].replace(",", "");
+      amount = amountMatch[1];
       description = speech.slice(amountMatch.index + amountMatch[0].length).trim();
       document.getElementById("amount").value = parseFloat(amount) || "";
       document.getElementById("description").value = description || "";
@@ -199,13 +199,11 @@ function startVoiceInput() {
   recognition.onerror = (event) => {
     console.error("Voice error:", event.error);
     if(event.error === "no-speech" || event.error === "aborted") {
-      setTimeout(() => recognition.start(), 500); // retry
+      setTimeout(() => recognition.start(), 500);
     }
   };
 
-  recognition.onend = () => {
-    console.log("Voice recognition ended.");
-  };
+  recognition.onend = () => console.log("Voice recognition ended.");
 }
 </script>
 </body>
