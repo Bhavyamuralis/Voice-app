@@ -97,7 +97,7 @@ function displayTransactions(){
     if(cursor){
       let tr=document.createElement("tr");
       tr.classList.add("swipe-row");
-      tr.dataset.id = cursor.value.id; // save id for gesture
+      tr.dataset.id = cursor.value.id; 
       tr.innerHTML = `<td>${cursor.value.date}</td><td>${cursor.value.description}</td><td>${cursor.value.amount.toFixed(2)}</td>`;
       
       // Gesture control
@@ -113,8 +113,8 @@ function displayTransactions(){
         let diff=endX-startX;
         tr.style.transform="translateX(0px)";
         tr.style.background="#fff";
-        if(diff>100) editTransaction(cursor.value);   // swipe right → edit
-        else if(diff<-100) deleteTransaction(cursor.value.id); // swipe left → delete
+        if(diff>100) editTransaction(cursor.value);   
+        else if(diff<-100) deleteTransaction(cursor.value.id); 
       });
 
       tbody.appendChild(tr);
@@ -163,8 +163,8 @@ function exportCSV(){
 }
 
 // Stable Voice input
-function startVoiceInput(){
-  if(!('webkitSpeechRecognition' in window)) return alert("Voice not supported!");
+function startVoiceInput() {
+  if (!('webkitSpeechRecognition' in window)) return alert("Voice not supported!");
 
   let recognition = new webkitSpeechRecognition();
   recognition.lang = "en-US";
@@ -174,27 +174,36 @@ function startVoiceInput(){
 
   recognition.start();
 
-  recognition.onstart = function() { console.log("Voice recognition started..."); };
-  
-  recognition.onresult = function(event){
-    let speech = event.results[0][0].transcript;
-    let match = speech.match(/([\d.]+)\s*(?:rs|rupees|amount)?\s*(.*)/i);
-    if(match){
-      document.getElementById("amount").value = match[1];
-      document.getElementById("description").value = match[2] || "";
+  recognition.onstart = () => console.log("Voice recognition started...");
+
+  recognition.onresult = (event) => {
+    let speech = event.results[0][0].transcript.trim();
+    console.log("Recognized speech:", speech);
+
+    // Extract first number as amount, rest as description
+    let amountMatch = speech.match(/([\d.,]+)/);
+    let amount = "";
+    let description = "";
+
+    if (amountMatch) {
+      amount = amountMatch[1].replace(",", "");
+      description = speech.slice(amountMatch.index + amountMatch[0].length).trim();
+      document.getElementById("amount").value = parseFloat(amount) || "";
+      document.getElementById("description").value = description || "";
     } else {
       document.getElementById("description").value = speech;
+      document.getElementById("amount").value = "";
     }
   };
 
-  recognition.onerror = function(event){
+  recognition.onerror = (event) => {
     console.error("Voice error:", event.error);
-    if(event.error === "no-speech" || event.error === "aborted"){
-      setTimeout(()=> recognition.start(), 500); // retry
+    if(event.error === "no-speech" || event.error === "aborted") {
+      setTimeout(() => recognition.start(), 500); // retry
     }
   };
 
-  recognition.onend = function() {
+  recognition.onend = () => {
     console.log("Voice recognition ended.");
   };
 }
