@@ -3,131 +3,183 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voice Expense Recorder</title>
-
-<!-- PWA Manifest inline -->
-<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVm9pY2UgRXhwZW5zZSBSZWNvcmRlciIsInNob3J0X25hbWUiOiJWb2ljZUV4cGVuc2UiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmOWY5ZjkiLCJ0aGVtZV9jb2xvciI6IiMwMDdiZmYiLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9wbmc7YmFzZTY0LEkVBFRJT0MiLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn0seyJzcmMiOiJkYXRhOmltYWdlL3BuZztiYXNlNjQsSURFTiIsInNpemVzIjoiNTI4eDUyOCIsInR5cGUiOiJpbWFnZS9wbmcifV19">
-
+<title>Offline Transaction Tracker</title>
 <style>
-body { font-family: Arial, sans-serif; margin:20px; background:#f9f9f9; }
-button { padding:10px 20px; margin:5px; border:none; border-radius:6px; background:#007bff; color:#fff; font-size:16px; }
-button:disabled { background:#aaa; }
-table { border-collapse: collapse; width:100%; margin-top:20px; background:#fff; }
-th,td { border:1px solid #ddd; padding:8px; text-align:center; }
-th { background:#007bff; color:#fff; }
-.total { font-weight:bold; background:#eee; }
-audio { width: 120px; }
+body { font-family: Arial, sans-serif; padding: 10px; background: #f2f2f2; }
+h2 { text-align: center; }
+form { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+input { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+button { padding: 10px; width: 100%; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+button.voice-btn { background: #2196F3; }
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+th { background: #4CAF50; color: white; }
+tfoot td { font-weight: bold; }
+tr.swipe-row { transition: transform 0.3s ease, background 0.3s ease; touch-action: pan-y; }
 </style>
 </head>
 <body>
-<h2>🎤 Voice Expense Recorder</h2>
-<button id="startBtn">🎙 Start Recording</button>
-<button id="stopBtn" disabled>⏹ Stop Recording</button>
-<button id="exportBtn">📤 Export CSV</button>
 
-<table id="dataTable">
-<thead><tr><th>Description</th><th>Amount</th><th>Audio</th></tr></thead>
-<tbody></tbody>
-<tfoot><tr class="total"><td>Total</td><td id="totalAmount">0</td><td></td></tr></tfoot>
+<h2>Offline Transaction Tracker</h2>
+
+<form id="transactionForm">
+  <input type="date" id="date" required>
+  <input type="text" id="description" placeholder="Description" required>
+  <input type="number" id="amount" placeholder="Amount" required>
+  <button type="button" class="voice-btn" onclick="startVoiceInput()">🎤 Voice Input</button>
+  <button type="submit">Add Transaction</button>
+</form>
+
+<button onclick="exportCSV()">Export to CSV</button>
+
+<table id="transactionTable">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Description</th>
+      <th>Amount</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2">Total</td>
+      <td id="totalAmount">0.00</td>
+    </tr>
+  </tfoot>
 </table>
 
 <script>
-// --- Local DB ---
-let records = JSON.parse(localStorage.getItem("records") || "[]");
-let recognition, mediaRecorder, audioChunks = [], currentAudioURL = null;
-renderTable();
+let db, editId = null;
+document.getElementById("date").valueAsDate = new Date();
 
-// --- Speech Recognition ---
-if('webkitSpeechRecognition' in window){
-  recognition = new webkitSpeechRecognition();
-  recognition.continuous=false; recognition.interimResults=false; recognition.lang="en-IN";
-  recognition.onresult = function(event){
-    let transcript = event.results[0][0].transcript;
-    let amount = extractAmount(transcript);
-    let desc = transcript.replace(/\d+/g,'').trim();
-    saveRecord(desc, amount, currentAudioURL);
-    currentAudioURL = null;
-  };
-}else{ alert("Speech Recognition not supported"); }
+// IndexedDB setup
+let request = indexedDB.open("TransactionDB", 1);
+request.onerror = e => alert("DB error: " + e.target.errorCode);
+request.onsuccess = e => { db = e.target.result; displayTransactions(); };
+request.onupgradeneeded = e => {
+  db = e.target.result;
+  let store = db.createObjectStore("transactions", { keyPath: "id", autoIncrement: true });
+  store.createIndex("date","date",{unique:false});
+  store.createIndex("description","description",{unique:false});
+  store.createIndex("amount","amount",{unique:false});
+};
 
-// --- Start Recording ---
-document.getElementById("startBtn").onclick = async function(){
-  audioChunks=[]; currentAudioURL=null;
-  let stream = await navigator.mediaDevices.getUserMedia({audio:true});
-  mediaRecorder = new MediaRecorder(stream);
-  mediaRecorder.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
-  mediaRecorder.onstop = () => {
-    let blob = new Blob(audioChunks,{type:'audio/webm'});
-    currentAudioURL = URL.createObjectURL(blob);
+// Add/update transaction
+document.getElementById("transactionForm").addEventListener("submit", e => {
+  e.preventDefault();
+  let date = document.getElementById("date").value;
+  let description = document.getElementById("description").value;
+  let amount = parseFloat(document.getElementById("amount").value);
+  if(!description || isNaN(amount)) return alert("Enter valid data");
+  let transaction = { date, description, amount };
+  let store = db.transaction("transactions","readwrite").objectStore("transactions");
+  if(editId !== null){
+    transaction.id = editId;
+    store.put(transaction).onsuccess = ()=>{ editId=null; displayTransactions(); resetForm(); };
+  } else store.add(transaction).onsuccess = ()=>{ displayTransactions(); resetForm(); };
+});
+
+function resetForm(){
+  document.getElementById("transactionForm").reset();
+  document.getElementById("date").valueAsDate = new Date();
+  document.querySelector("button[type='submit']").textContent="Add Transaction";
+}
+
+// Display transactions with swipe gestures
+function displayTransactions(){
+  let tbody = document.querySelector("#transactionTable tbody");
+  tbody.innerHTML="";
+  let total=0;
+  let store = db.transaction("transactions").objectStore("transactions");
+  store.openCursor().onsuccess = function(e){
+    let cursor = e.target.result;
+    if(cursor){
+      let tr=document.createElement("tr");
+      tr.classList.add("swipe-row");
+      tr.dataset.id = cursor.value.id; // save id for gesture
+      tr.innerHTML = `<td>${cursor.value.date}</td><td>${cursor.value.description}</td><td>${cursor.value.amount.toFixed(2)}</td>`;
+      
+      // Gesture control
+      let startX=0;
+      tr.addEventListener("touchstart", evt=>startX=evt.touches[0].clientX);
+      tr.addEventListener("touchmove", evt=>{
+        let moveX=evt.touches[0].clientX - startX;
+        tr.style.transform=`translateX(${moveX}px)`;
+        tr.style.background = moveX>0 ? "#FFF3CD" : moveX<0 ? "#F8D7DA" : "#fff";
+      });
+      tr.addEventListener("touchend", evt=>{
+        let endX=evt.changedTouches[0].clientX;
+        let diff=endX-startX;
+        tr.style.transform="translateX(0px)";
+        tr.style.background="#fff";
+        if(diff>100) editTransaction(cursor.value);   // swipe right → edit
+        else if(diff<-100) deleteTransaction(cursor.value.id); // swipe left → delete
+      });
+
+      tbody.appendChild(tr);
+      total+=cursor.value.amount;
+      cursor.continue();
+    }
+    document.getElementById("totalAmount").textContent=total.toFixed(2);
   };
-  mediaRecorder.start();
+}
+
+// Edit transaction
+function editTransaction(data){
+  document.getElementById("date").value = data.date;
+  document.getElementById("description").value = data.description;
+  document.getElementById("amount").value = data.amount;
+  editId = data.id;
+  document.querySelector("button[type='submit']").textContent="Update Transaction";
+}
+
+// Delete transaction
+function deleteTransaction(id){
+  if(confirm("Delete this transaction?")){
+    db.transaction("transactions","readwrite").objectStore("transactions").delete(id).onsuccess=displayTransactions;
+  }
+}
+
+// Export CSV
+function exportCSV(){
+  let rows=[["Date","Description","Amount"]];
+  let store=db.transaction("transactions").objectStore("transactions");
+  store.openCursor().onsuccess=function(e){
+    let cursor=e.target.result;
+    if(cursor){
+      rows.push([cursor.value.date,cursor.value.description,cursor.value.amount]);
+      cursor.continue();
+    } else {
+      let csv="data:text/csv;charset=utf-8,"+rows.map(r=>r.join(",")).join("\n");
+      let link=document.createElement("a");
+      link.href=encodeURI(csv);
+      link.download="transactions.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+}
+
+// Voice input
+function startVoiceInput(){
+  if(!('webkitSpeechRecognition' in window)) return alert("Voice not supported!");
+  let recognition=new webkitSpeechRecognition();
+  recognition.lang="en-US";
+  recognition.interimResults=false;
+  recognition.maxAlternatives=1;
   recognition.start();
-  this.disabled = true; document.getElementById("stopBtn").disabled=false;
-};
-
-// --- Stop Recording ---
-document.getElementById("stopBtn").onclick = function(){
-  recognition.stop();
-  mediaRecorder.stop();
-  this.disabled = true; document.getElementById("startBtn").disabled=false;
-};
-
-// --- Save Record ---
-function saveRecord(desc, amount, audioURL){
-  if(!desc && !amount) return;
-  records.push({desc, amount, audioURL});
-  localStorage.setItem("records", JSON.stringify(records));
-  renderTable();
-}
-
-// --- Render Table ---
-function renderTable(){
-  let tbody = document.querySelector("#dataTable tbody");
-  tbody.innerHTML=""; let total=0;
-  records.forEach(r=>{
-    let tr=document.createElement("tr");
-    tr.innerHTML=`<td>${r.desc}</td><td>${r.amount}</td>
-      <td>${r.audioURL?'<audio controls src="'+r.audioURL+'"></audio>':''}</td>`;
-    tbody.appendChild(tr);
-    total += Number(r.amount)||0;
-  });
-  document.getElementById("totalAmount").innerText=total;
-}
-
-// --- Export CSV ---
-document.getElementById("exportBtn").onclick = function(){
-  let csv="Description,Amount\n";
-  records.forEach(r=>{csv+=`"${r.desc}",${r.amount}\n`;});
-  let blob=new Blob([csv],{type:"text/csv"});
-  let url=URL.createObjectURL(blob);
-  let a=document.createElement("a"); a.href=url; a.download="records.csv"; a.click();
-};
-
-// --- Words to Numbers ---
-function extractAmount(text){
-  let match=text.match(/\d+/); if(match) return match[0];
-  const words={"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,
-  "eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,"sixteen":16,"seventeen":17,"eighteen":18,"nineteen":19,
-  "twenty":20,"thirty":30,"forty":40,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90,
-  "hundred":100,"thousand":1000};
-  let tokens=text.toLowerCase().split(/\s+/), num=0, temp=0;
-  tokens.forEach(w=>{
-    if(words[w]){ if(w=="hundred") temp*=100; else if(w=="thousand"){temp*=1000; num+=temp; temp=0;} else temp+=words[w]; }
-  });
-  num+=temp; return num||"";
-}
-
-// --- Inline Service Worker ---
-if('serviceWorker' in navigator){
-  const swCode = `
-  const cacheName='voice-expense-cache-v1';
-  const assets = ['./'];
-  self.addEventListener('install',e=>{e.waitUntil(caches.open(cacheName).then(c=>c.addAll(assets)));});
-  self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});
-  `;
-  const blob = new Blob([swCode], {type:'application/javascript'});
-  const swURL = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swURL).then(()=>console.log("SW Registered"));
+  recognition.onresult=function(event){
+    let speech=event.results[0][0].transcript;
+    let match=speech.match(/([\d.]+)\s*(?:rs|rupees|amount)?\s*(.*)/i);
+    if(match){
+      document.getElementById("amount").value=match[1];
+      document.getElementById("description").value=match[2] || "";
+    } else {
+      document.getElementById("description").value=speech;
+    }
+  };
 }
 </script>
 </body>
