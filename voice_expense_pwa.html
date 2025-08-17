@@ -1,163 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Expense Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input, button { padding: 10px; margin: 5px; font-size: 16px; }
-    #controls { display: flex; gap: 10px; margin-bottom: 15px; }
-    button { flex: 1; border: none; border-radius: 8px; }
-    #addBtn { background: green; color: white; font-size: 18px; }
-    #voiceBtn { background: blue; color: white; font-size: 18px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    tr.swipe-right { background: #e0f7fa; transition: background 0.3s; }
-    tr.swipe-left { background: #ffebee; transition: background 0.3s; }
-    #total { margin-top: 15px; font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Tracker</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f7f7f7;
+    }
+    h2 { text-align: center; }
+    .input-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    input {
+        padding: 10px;
+        font-size: 16px;
+        flex: 1;
+        margin-right: 10px;
+    }
+    .buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    button {
+        padding: 15px;
+        font-size: 18px;
+        flex: 1;
+        margin: 5px;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+    }
+    #addBtn { background: #28a745; }
+    #voiceBtn { background: #007bff; }
+    #exportBtn { background: #ff9800; }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background: white;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+    th { background: #f2f2f2; }
+    tr.swipe-left { background: #f8d7da; transition: 0.3s; }
+    tr.swipe-right { background: #d4edda; transition: 0.3s; }
+    .total {
+        margin-top: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        text-align: right;
+    }
+</style>
 </head>
 <body>
 
-  <h2>Expense Tracker</h2>
-  <input type="date" id="date">
-  <input type="text" id="description" placeholder="Description">
-  <input type="number" id="amount" placeholder="Amount">
+<h2>📒 Expense Tracker</h2>
 
-  <div id="controls">
-    <button id="addBtn">➕ Add</button>
-    <button id="voiceBtn">🎤 Voice</button>
-  </div>
+<div class="input-row">
+    <input type="text" id="description" placeholder="Enter description">
+    <input type="number" id="amount" placeholder="Amount">
+</div>
 
-  <table>
+<div class="buttons">
+    <button id="voiceBtn" onclick="startVoiceInput()">🎤 Voice</button>
+    <button id="addBtn" onclick="addEntry()">➕ Add</button>
+</div>
+
+<button id="exportBtn" onclick="exportCSV()">📤 Export CSV</button>
+
+<table id="expenseTable">
     <thead>
-      <tr>
-        <th>Date</th>
-        <th>Description</th>
-        <th>Amount</th>
-      </tr>
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Amount</th>
+        </tr>
     </thead>
-    <tbody id="dataBody"></tbody>
-  </table>
+    <tbody></tbody>
+</table>
 
-  <div id="total">Total: 0</div>
+<div class="total">Total: ₹<span id="total">0</span></div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("expenses") || "[]");
-let editingIndex = -1; // track which record is being edited
+let expenses = [];
+let editIndex = null;
 
-// set today date default
-document.getElementById("date").valueAsDate = new Date();
-
-function saveData() {
-  localStorage.setItem("expenses", JSON.stringify(data));
-}
-
-function renderTable() {
-  const body = document.getElementById("dataBody");
-  body.innerHTML = "";
-  let total = 0;
-
-  data.forEach((item, index) => {
-    let row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${item.date}</td>
-      <td>${item.description}</td>
-      <td>${item.amount}</td>
-    `;
-
-    // swipe detection
-    let startX;
-    row.addEventListener("touchstart", e => {
-      startX = e.changedTouches[0].screenX;
-    });
-
-    row.addEventListener("touchend", e => {
-      let endX = e.changedTouches[0].screenX;
-      let diff = endX - startX;
-      if (diff > 50) { // swipe right = edit
-        row.classList.add("swipe-right");
-        setTimeout(() => row.classList.remove("swipe-right"), 500);
-        editEntry(index);
-      } else if (diff < -50) { // swipe left = delete
-        row.classList.add("swipe-left");
-        setTimeout(() => {
-          data.splice(index, 1);
-          saveData();
-          renderTable();
-        }, 300);
-      }
-    });
-
-    body.appendChild(row);
-    total += parseFloat(item.amount);
-  });
-
-  document.getElementById("total").innerText = "Total: " + total.toFixed(2);
-}
-
+// Add or Edit entry
 function addEntry() {
-  let date = document.getElementById("date").value;
-  let desc = document.getElementById("description").value.trim();
-  let amount = parseFloat(document.getElementById("amount").value);
+    let desc = document.getElementById("description").value.trim();
+    let amt = parseFloat(document.getElementById("amount").value);
+    if (!desc || isNaN(amt)) return alert("Enter description and valid amount");
 
-  if (!desc || isNaN(amount)) {
-    alert("Enter description and amount!");
-    return;
-  }
+    let today = new Date().toISOString().split("T")[0];
+    let entry = { date: today, description: desc, amount: amt };
 
-  if (editingIndex >= 0) {
-    // update existing record
-    data[editingIndex] = { date, description: desc, amount };
-    editingIndex = -1;
-  } else {
-    // new record
-    data.push({ date, description: desc, amount });
-  }
+    if (editIndex !== null) {
+        expenses[editIndex] = entry;
+        editIndex = null;
+    } else {
+        expenses.push(entry);
+    }
 
-  saveData();
-  renderTable();
+    document.getElementById("description").value = "";
+    document.getElementById("amount").value = "";
+    renderTable();
+}
 
-  // reset inputs
-  document.getElementById("description").value = "";
-  document.getElementById("amount").value = "";
+// Render table with swipe gestures
+function renderTable() {
+    let tbody = document.querySelector("#expenseTable tbody");
+    tbody.innerHTML = "";
+
+    expenses.forEach((exp, index) => {
+        let row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${exp.date}</td>
+            <td>${exp.description}</td>
+            <td>₹${exp.amount.toFixed(2)}</td>
+        `;
+
+        let startX = 0;
+        row.addEventListener("touchstart", e => { startX = e.touches[0].clientX; });
+        row.addEventListener("touchend", e => {
+            let endX = e.changedTouches[0].clientX;
+            if (startX - endX > 100) { // Swipe Left = Delete
+                row.classList.add("swipe-left");
+                setTimeout(() => { deleteEntry(index); }, 300);
+            } else if (endX - startX > 100) { // Swipe Right = Edit
+                row.classList.add("swipe-right");
+                setTimeout(() => { editEntry(index); }, 300);
+            }
+        });
+
+        tbody.appendChild(row);
+    });
+
+    updateTotal();
+}
+
+function deleteEntry(index) {
+    expenses.splice(index, 1);
+    renderTable();
 }
 
 function editEntry(index) {
-  let item = data[index];
-  document.getElementById("date").value = item.date;
-  document.getElementById("description").value = item.description;
-  document.getElementById("amount").value = item.amount;
-  editingIndex = index;
+    document.getElementById("description").value = expenses[index].description;
+    document.getElementById("amount").value = expenses[index].amount;
+    editIndex = index;
 }
 
-// voice input
-document.getElementById("voiceBtn").addEventListener("click", () => {
-  if (!('webkitSpeechRecognition' in window)) {
-    alert("Voice recognition not supported in this browser.");
-    return;
-  }
-  const recognition = new webkitSpeechRecognition();
-  recognition.lang = "te-IN"; // Telugu input
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+function updateTotal() {
+    let total = expenses.reduce((sum, e) => sum + e.amount, 0);
+    document.getElementById("total").textContent = total.toFixed(2);
+}
 
-  recognition.start();
+// Export to CSV
+function exportCSV() {
+    let csv = "Date,Description,Amount\n";
+    expenses.forEach(e => {
+        csv += `${e.date},${e.description},${e.amount}\n`;
+    });
 
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    document.getElementById("description").value = transcript;
-  };
+    let blob = new Blob([csv], { type: "text/csv" });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "expenses.csv";
+    link.click();
+}
 
-  recognition.onerror = function() {
-    alert("Voice recognition error");
-  };
-});
+// Voice Input with Telugu/English fallback
+function startVoiceInput() {
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Sorry, your browser does not support voice input.");
+        return;
+    }
 
-document.getElementById("addBtn").addEventListener("click", addEntry);
+    const recognition = new webkitSpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
 
-renderTable();
+    // Detect device language, fallback to English
+    let userLang = navigator.language || "en-US";
+    if (userLang !== "te-IN" && userLang !== "en-IN") {
+        userLang = "en-US";
+    }
+    recognition.lang = userLang;
+
+    recognition.onstart = () => console.log("🎤 Listening...");
+    recognition.onerror = (event) => {
+        console.error("Voice error:", event.error);
+        alert("Voice recognition error: " + event.error);
+    };
+    recognition.onresult = (event) => {
+        let transcript = event.results[0][0].transcript;
+        document.getElementById("description").value = transcript;
+    };
+    recognition.onend = () => console.log("🎤 Stopped listening");
+
+    recognition.start();
+}
 </script>
+
 </body>
 </html>
