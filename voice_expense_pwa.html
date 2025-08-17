@@ -5,156 +5,159 @@
   <title>Expense Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; padding: 15px; }
-    h2 { text-align: center; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
     input, button { padding: 10px; margin: 5px; font-size: 16px; }
+    #controls { display: flex; gap: 10px; margin-bottom: 15px; }
+    button { flex: 1; border: none; border-radius: 8px; }
+    #addBtn { background: green; color: white; font-size: 18px; }
+    #voiceBtn { background: blue; color: white; font-size: 18px; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    tr { transition: transform 0.3s ease; }
-    .button-row { display: flex; justify-content: space-between; margin-top: 10px; }
-    .big-btn { flex: 1; font-size: 20px; padding: 15px; margin: 5px; }
-    .edit-highlight { background-color: #ffff99; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    tr.swipe-right { background: #e0f7fa; transition: background 0.3s; }
+    tr.swipe-left { background: #ffebee; transition: background 0.3s; }
+    #total { margin-top: 15px; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h2>📒 Expense Tracker</h2>
 
-  <label>Date:</label>
-  <input type="date" id="date"><br>
-  <label>Description:</label>
-  <input type="text" id="description"><br>
-  <label>Amount:</label>
-  <input type="number" id="amount"><br>
+  <h2>Expense Tracker</h2>
+  <input type="date" id="date">
+  <input type="text" id="description" placeholder="Description">
+  <input type="number" id="amount" placeholder="Amount">
 
-  <div class="button-row">
-    <button id="addBtn" class="big-btn">➕ Add</button>
-    <button id="voiceBtn" class="big-btn">🎤 Voice</button>
+  <div id="controls">
+    <button id="addBtn">➕ Add</button>
+    <button id="voiceBtn">🎤 Voice</button>
   </div>
-  <button onclick="exportCSV()">📤 Export CSV</button>
 
-  <table id="dataTable">
+  <table>
     <thead>
-      <tr><th>Date</th><th>Description</th><th>Amount</th></tr>
+      <tr>
+        <th>Date</th>
+        <th>Description</th>
+        <th>Amount</th>
+      </tr>
     </thead>
-    <tbody></tbody>
-    <tfoot>
-      <tr><td colspan="2"><b>Total</b></td><td id="total">0</td></tr>
-    </tfoot>
+    <tbody id="dataBody"></tbody>
   </table>
 
-  <script>
-    let editId = null; // track which row is being edited
+  <div id="total">Total: 0</div>
 
-    document.getElementById("date").value = new Date().toISOString().split("T")[0];
+<script>
+let data = JSON.parse(localStorage.getItem("expenses") || "[]");
+let editingIndex = -1; // track which record is being edited
 
-    function loadData() {
-      let data = JSON.parse(localStorage.getItem("expenses") || "[]");
-      let tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
-      let total = 0;
+// set today date default
+document.getElementById("date").valueAsDate = new Date();
 
-      data.forEach(item => {
-        let tr = document.createElement("tr");
-        tr.dataset.id = item.id; // assign ID to row
-        tr.innerHTML = `<td>${item.date}</td><td>${item.description}</td><td>${item.amount}</td>`;
-        tbody.appendChild(tr);
-        total += parseFloat(item.amount);
-        addSwipe(tr);
-      });
+function saveData() {
+  localStorage.setItem("expenses", JSON.stringify(data));
+}
 
-      document.getElementById("total").innerText = total.toFixed(2);
-    }
+function renderTable() {
+  const body = document.getElementById("dataBody");
+  body.innerHTML = "";
+  let total = 0;
 
-    function saveData(date, description, amount) {
-      let data = JSON.parse(localStorage.getItem("expenses") || "[]");
+  data.forEach((item, index) => {
+    let row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.date}</td>
+      <td>${item.description}</td>
+      <td>${item.amount}</td>
+    `;
 
-      if (editId) {
-        // update existing record
-        let index = data.findIndex(x => x.id === editId);
-        if (index !== -1) {
-          data[index] = { id: editId, date, description, amount };
-        }
-        editId = null;
-        document.getElementById("addBtn").innerText = "➕ Add";
-      } else {
-        // add new record
-        let id = Date.now().toString();
-        data.push({ id, date, description, amount });
-      }
-
-      localStorage.setItem("expenses", JSON.stringify(data));
-      loadData();
-    }
-
-    document.getElementById("addBtn").addEventListener("click", () => {
-      let date = document.getElementById("date").value;
-      let description = document.getElementById("description").value;
-      let amount = document.getElementById("amount").value;
-      if (!description || !amount) return alert("Enter description & amount");
-      saveData(date, description, amount);
-      document.getElementById("description").value = "";
-      document.getElementById("amount").value = "";
+    // swipe detection
+    let startX;
+    row.addEventListener("touchstart", e => {
+      startX = e.changedTouches[0].screenX;
     });
 
-    function addSwipe(row) {
-      let touchstartX = 0;
-      let touchendX = 0;
-      row.addEventListener("touchstart", e => touchstartX = e.changedTouches[0].screenX);
-      row.addEventListener("touchend", e => {
-        touchendX = e.changedTouches[0].screenX;
-        if (touchendX < touchstartX - 50) { // left swipe = delete
-          let id = row.dataset.id;
-          let data = JSON.parse(localStorage.getItem("expenses") || "[]");
-          data = data.filter(x => x.id !== id);
-          localStorage.setItem("expenses", JSON.stringify(data));
-          loadData();
-        } else if (touchendX > touchstartX + 50) { // right swipe = edit
-          let id = row.dataset.id;
-          let data = JSON.parse(localStorage.getItem("expenses") || "[]");
-          let record = data.find(x => x.id === id);
-          if (record) {
-            document.getElementById("date").value = record.date;
-            document.getElementById("description").value = record.description;
-            document.getElementById("amount").value = record.amount;
-            editId = record.id;
-            document.getElementById("addBtn").innerText = "✏️ Update";
-          }
-        }
-      });
-    }
-
-    function exportCSV() {
-      let data = JSON.parse(localStorage.getItem("expenses") || "[]");
-      if (data.length === 0) return alert("No data to export");
-      let csv = "Date,Description,Amount\n";
-      data.forEach(item => {
-        csv += `${item.date},${item.description},${item.amount}\n`;
-      });
-      let blob = new Blob([csv], { type: "text/csv" });
-      let url = URL.createObjectURL(blob);
-      let a = document.createElement("a");
-      a.href = url;
-      a.download = "expenses.csv";
-      a.click();
-    }
-
-    // 🎤 Voice input
-    document.getElementById("voiceBtn").addEventListener("click", () => {
-      if (!("webkitSpeechRecognition" in window)) {
-        alert("Voice not supported in this browser");
-        return;
+    row.addEventListener("touchend", e => {
+      let endX = e.changedTouches[0].screenX;
+      let diff = endX - startX;
+      if (diff > 50) { // swipe right = edit
+        row.classList.add("swipe-right");
+        setTimeout(() => row.classList.remove("swipe-right"), 500);
+        editEntry(index);
+      } else if (diff < -50) { // swipe left = delete
+        row.classList.add("swipe-left");
+        setTimeout(() => {
+          data.splice(index, 1);
+          saveData();
+          renderTable();
+        }, 300);
       }
-      let recognition = new webkitSpeechRecognition();
-      recognition.lang = "te-IN"; // Telugu input
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.start();
-      recognition.onresult = event => {
-        document.getElementById("description").value = event.results[0][0].transcript;
-      };
     });
 
-    loadData();
-  </script>
+    body.appendChild(row);
+    total += parseFloat(item.amount);
+  });
+
+  document.getElementById("total").innerText = "Total: " + total.toFixed(2);
+}
+
+function addEntry() {
+  let date = document.getElementById("date").value;
+  let desc = document.getElementById("description").value.trim();
+  let amount = parseFloat(document.getElementById("amount").value);
+
+  if (!desc || isNaN(amount)) {
+    alert("Enter description and amount!");
+    return;
+  }
+
+  if (editingIndex >= 0) {
+    // update existing record
+    data[editingIndex] = { date, description: desc, amount };
+    editingIndex = -1;
+  } else {
+    // new record
+    data.push({ date, description: desc, amount });
+  }
+
+  saveData();
+  renderTable();
+
+  // reset inputs
+  document.getElementById("description").value = "";
+  document.getElementById("amount").value = "";
+}
+
+function editEntry(index) {
+  let item = data[index];
+  document.getElementById("date").value = item.date;
+  document.getElementById("description").value = item.description;
+  document.getElementById("amount").value = item.amount;
+  editingIndex = index;
+}
+
+// voice input
+document.getElementById("voiceBtn").addEventListener("click", () => {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Voice recognition not supported in this browser.");
+    return;
+  }
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = "te-IN"; // Telugu input
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.start();
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById("description").value = transcript;
+  };
+
+  recognition.onerror = function() {
+    alert("Voice recognition error");
+  };
+});
+
+document.getElementById("addBtn").addEventListener("click", addEntry);
+
+renderTable();
+</script>
 </body>
 </html>
