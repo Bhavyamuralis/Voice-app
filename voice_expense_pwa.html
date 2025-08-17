@@ -236,6 +236,11 @@ function startVoiceInput() {
       document.getElementById("description").value = speech;
       document.getElementById("amount").value = "";
     }
+    
+    // Automatically submit the form after voice input
+    setTimeout(() => {
+      document.getElementById("transactionForm").dispatchEvent(new Event('submit'));
+    }, 500);
   };
 
   recognition.onerror = (event) => {
