@@ -114,7 +114,10 @@ function displayTransactions(){
     if(cursor){
       let tr=document.createElement("tr");
       tr.classList.add("swipe-row");
-      tr.dataset.id = cursor.value.id; 
+      tr.dataset.id = cursor.value.id;
+      // Store the complete transaction data in the row
+      tr.transactionData = cursor.value;
+      
       tr.innerHTML = `<td>${cursor.value.date}</td><td>${cursor.value.description}</td><td>${cursor.value.amount.toFixed(2)}</td>`;
       
       // Improved gesture control
@@ -148,9 +151,9 @@ function displayTransactions(){
         
         if (isSwiping && Math.abs(diffX) > 100) {
           if (diffX > 0) {
-            editTransaction(cursor.value);
+            editTransaction(tr.transactionData);
           } else {
-            deleteTransaction(cursor.value.id);
+            deleteTransaction(tr.transactionData.id);
           }
         }
       }, {passive: true});
