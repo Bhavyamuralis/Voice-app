@@ -1,142 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Offline Transaction Tracker</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h2 { margin-top: 20px; }
-    form { margin-bottom: 20px; }
-    input, button { padding: 10px; margin: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-    .actions { display: flex; justify-content: space-between; margin-top: 20px; }
-    button { font-size: 16px; border-radius: 12px; }
-    #voice, #add { flex: 1; margin: 5px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offline Transaction Tracker</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 10px; background: #f2f2f2; }
+h2 { text-align: center; }
+form { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+input { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+.button-container { display: flex; gap: 10px; margin-top: 10px; }
+button { 
+  padding: 12px; 
+  flex: 1; 
+  background: #4CAF50; 
+  color: white; 
+  border: none; 
+  border-radius: 25px; 
+  cursor: pointer; 
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+button:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+button.voice-btn { background: #2196F3; }
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+th { background: #4CAF50; color: white; }
+tfoot td { font-weight: bold; }
+tr.swipe-row { transition: transform 0.3s ease, background 0.3s ease; touch-action: pan-y; }
+</style>
 </head>
 <body>
-  <h2>Offline Transaction Tracker</h2>
-  
-  <form id="transactionForm">
-    <input type="date" id="date" required>
-    <input type="text" id="description" placeholder="Description" required>
-    <input type="number" id="amount" placeholder="Amount" required>
-    <div class="actions">
-      <button type="button" id="voice">🎤 Voice</button>
-      <button type="submit" id="add">➕ Add</button>
-    </div>
-  </form>
-  
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Description</th>
-        <th>Amount</th>
-      </tr>
-    </thead>
-    <tbody id="transactions"></tbody>
-  </table>
 
-  <script>
-    let db, editId=null;
+<h2>Offline Transaction Tracker</h2>
 
-    // Open IndexedDB
-    const request = indexedDB.open("TransactionDB", 1);
-    request.onupgradeneeded = e => {
-      let db = e.target.result;
-      db.createObjectStore("transactions", { keyPath: "id", autoIncrement: true });
-    };
-    request.onsuccess = e => {
-      db = e.target.result;
-      displayTransactions();
-    };
+<form id="transactionForm">
+  <input type="date" id="date" required>
+  <input type="text" id="description" placeholder="Description" required>
+  <input type="number" id="amount" placeholder="Amount" required>
+  <div class="button-container">
+    <button type="button" class="voice-btn" onclick="startVoiceInput()">🎤 Voice Input</button>
+    <button type="submit">Add Transaction</button>
+  </div>
+</form>
 
-    // Add / Update transaction
-    document.getElementById("transactionForm").onsubmit = function(e){
-      e.preventDefault();
-      let date = document.getElementById("date").value;
-      let description = document.getElementById("description").value;
-      let amount = parseFloat(document.getElementById("amount").value);
-      let tx = db.transaction("transactions", "readwrite");
-      let store = tx.objectStore("transactions");
-      if(editId){
-        store.put({id:editId, date, description, amount});
-        editId=null;
-        document.querySelector("button[type='submit']").textContent="➕ Add";
-      } else {
-        store.add({date, description, amount});
-      }
-      tx.oncomplete=displayTransactions;
-      this.reset();
-    };
+<button onclick="exportCSV()" style="width: 100%; border-radius: 25px; padding: 12px; margin-bottom: 20px;">Export to CSV</button>
 
-    // Display records
-    function displayTransactions(){
-      let tbody = document.getElementById("transactions");
-      tbody.innerHTML="";
-      let tx = db.transaction("transactions", "readonly");
-      let store = tx.objectStore("transactions");
-      store.openCursor().onsuccess = function(e){
-        let cursor = e.target.result;
-        if(cursor){
-          let tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${cursor.value.date}</td>
-            <td>${cursor.value.description}</td>
-            <td>${cursor.value.amount.toFixed(2)}</td>
-          `;
-          // attach swipe events with its own record
-          addSwipeHandlers(tr, cursor.value);
-          tbody.appendChild(tr);
-          cursor.continue();
+<table id="transactionTable">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Description</th>
+      <th>Amount</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2">Total</td>
+      <td id="totalAmount">0.00</td>
+    </tr>
+  </tfoot>
+</table>
+
+<script>
+let db, editId = null;
+document.getElementById("date").valueAsDate = new Date();
+
+// IndexedDB setup
+let request = indexedDB.open("TransactionDB", 1);
+request.onerror = e => alert("DB error: " + e.target.errorCode);
+request.onsuccess = e => { db = e.target.result; displayTransactions(); };
+request.onupgradeneeded = e => {
+  db = e.target.result;
+  let store = db.createObjectStore("transactions", { keyPath: "id", autoIncrement: true });
+  store.createIndex("date","date",{unique:false});
+  store.createIndex("description","description",{unique:false});
+  store.createIndex("amount","amount",{unique:false});
+};
+
+// Add/update transaction
+document.getElementById("transactionForm").addEventListener("submit", e => {
+  e.preventDefault();
+  let date = document.getElementById("date").value;
+  let description = document.getElementById("description").value;
+  let amount = parseFloat(document.getElementById("amount").value);
+  if(!description || isNaN(amount)) return alert("Enter valid data");
+  let transaction = { date, description, amount };
+  let store = db.transaction("transactions","readwrite").objectStore("transactions");
+  if(editId !== null){
+    transaction.id = editId;
+    store.put(transaction).onsuccess = ()=>{ editId=null; displayTransactions(); resetForm(); };
+  } else store.add(transaction).onsuccess = ()=>{ displayTransactions(); resetForm(); };
+});
+
+function resetForm(){
+  document.getElementById("transactionForm").reset();
+  document.getElementById("date").valueAsDate = new Date();
+  document.querySelector("button[type='submit']").textContent="Add Transaction";
+}
+
+// Display transactions with swipe gestures
+function displayTransactions(){
+  let tbody = document.querySelector("#transactionTable tbody");
+  tbody.innerHTML="";
+  let total=0;
+  let store = db.transaction("transactions").objectStore("transactions");
+  store.openCursor().onsuccess = function(e){
+    let cursor = e.target.result;
+    if(cursor){
+      let tr=document.createElement("tr");
+      tr.classList.add("swipe-row");
+      tr.dataset.id = cursor.value.id; 
+      tr.innerHTML = `<td>${cursor.value.date}</td><td>${cursor.value.description}</td><td>${cursor.value.amount.toFixed(2)}</td>`;
+      
+      // Improved gesture control
+      let startX=0, isScrolling;
+      tr.addEventListener("touchstart", evt=>{
+        startX=evt.touches[0].clientX;
+        isScrolling = false;
+      }, {passive: true});
+      
+      tr.addEventListener("touchmove", evt=>{
+        if (isScrolling) return;
+        let moveX=evt.touches[0].clientX - startX;
+        // Only trigger if movement is primarily horizontal
+        if (Math.abs(moveX) > 5) {
+          evt.preventDefault();
+          tr.style.transform=`translateX(${moveX}px)`;
+          tr.style.background = moveX>0 ? "#FFF3CD" : moveX<0 ? "#F8D7DA" : "#fff";
+        } else {
+          isScrolling = true;
         }
-      };
-    }
-
-    // Swipe to Edit/Delete
-    function addSwipeHandlers(row, data){
-      let startX=0;
-      row.addEventListener("touchstart", e=>{
-        startX=e.changedTouches[0].screenX;
-      });
-      row.addEventListener("touchend", e=>{
-        let endX=e.changedTouches[0].screenX;
-        if(endX-startX > 50){ // swipe right -> edit
-          editTransaction(data);
-        } else if(startX-endX > 50){ // swipe left -> delete
-          deleteTransaction(data.id);
+      }, {passive: false});
+      
+      tr.addEventListener("touchend", evt=>{
+        let endX=evt.changedTouches[0].clientX;
+        let diff=endX-startX;
+        tr.style.transform="translateX(0px)";
+        tr.style.background="#fff";
+        if(!isScrolling && Math.abs(diff) > 100) {
+          if(diff>0) editTransaction(cursor.value);   
+          else deleteTransaction(cursor.value.id); 
         }
-      });
-    }
+      }, {passive: true});
 
-    // Edit
-    function editTransaction(data){
-      document.getElementById("date").value = data.date;
-      document.getElementById("description").value = data.description;
-      document.getElementById("amount").value = data.amount;
-      editId = data.id;
-      document.querySelector("button[type='submit']").textContent="✏️ Update";
+      tbody.appendChild(tr);
+      total+=cursor.value.amount;
+      cursor.continue();
     }
+    document.getElementById("totalAmount").textContent=total.toFixed(2);
+  };
+}
 
-    // Delete
-    function deleteTransaction(id){
-      let tx = db.transaction("transactions", "readwrite");
-      tx.objectStore("transactions").delete(id);
-      tx.oncomplete=displayTransactions;
+// Edit transaction
+function editTransaction(data){
+  document.getElementById("date").value = data.date;
+  document.getElementById("description").value = data.description;
+  document.getElementById("amount").value = data.amount;
+  editId = data.id;
+  document.querySelector("button[type='submit']").textContent="Update Transaction";
+}
+
+// Delete transaction
+function deleteTransaction(id){
+  if(confirm("Delete this transaction?")){
+    db.transaction("transactions","readwrite").objectStore("transactions").delete(id).onsuccess=displayTransactions;
+  }
+}
+
+// Export CSV
+function exportCSV(){
+  let rows=[["Date","Description","Amount"]];
+  let store=db.transaction("transactions").objectStore("transactions");
+  store.openCursor().onsuccess=function(e){
+    let cursor=e.target.result;
+    if(cursor){
+      rows.push([cursor.value.date,cursor.value.description,cursor.value.amount]);
+      cursor.continue();
+    } else {
+      let csv="data:text/csv;charset=utf-8,"+rows.map(r=>r.join(",")).join("\n");
+      let link=document.createElement("a");
+      link.href=encodeURI(csv);
+      link.download="transactions.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
+  };
+}
 
-    // Voice Input (only for description)
-    document.getElementById("voice").onclick=function(){
-      if(!('webkitSpeechRecognition' in window)){ alert("Not supported"); return;}
-      let rec = new webkitSpeechRecognition();
-      rec.lang="te-IN"; // Telugu input
-      rec.start();
-      rec.onresult=function(e){
-        document.getElementById("description").value = e.results[0][0].transcript;
-      };
-    };
-  </script>
+// Telugu Voice input
+function startVoiceInput() {
+  if (!('webkitSpeechRecognition' in window)) return alert("Voice not supported!");
+
+  let recognition = new webkitSpeechRecognition();
+  recognition.lang = "te-IN"; // Telugu language
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  recognition.start();
+
+  recognition.onstart = () => console.log("Voice recognition started...");
+
+  recognition.onresult = (event) => {
+    let speech = event.results[0][0].transcript.trim();
+    console.log("Recognized speech:", speech);
+
+    // Extract first number as amount, rest as description
+    let amountMatch = speech.match(/([\d]+)/);
+    let amount = "";
+    let description = "";
+
+    if (amountMatch) {
+      amount = amountMatch[1];
+      description = speech.slice(amountMatch.index + amountMatch[0].length).trim();
+      document.getElementById("amount").value = parseFloat(amount) || "";
+      document.getElementById("description").value = description || "";
+    } else {
+      document.getElementById("description").value = speech;
+      document.getElementById("amount").value = "";
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.error("Voice error:", event.error);
+    if(event.error === "no-speech" || event.error === "aborted") {
+      setTimeout(() => recognition.start(), 500);
+    }
+  };
+
+  recognition.onend = () => console.log("Voice recognition ended.");
+}
+</script>
 </body>
 </html>
