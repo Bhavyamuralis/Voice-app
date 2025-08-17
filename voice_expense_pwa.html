@@ -118,41 +118,49 @@ function displayTransactions(){
       tr.innerHTML = `<td>${cursor.value.date}</td><td>${cursor.value.description}</td><td>${cursor.value.amount.toFixed(2)}</td>`;
       
       // Improved gesture control
-      let startX=0, isScrolling;
-      tr.addEventListener("touchstart", evt=>{
-        startX=evt.touches[0].clientX;
-        isScrolling = false;
+      let startX = 0;
+      let isSwiping = false;
+      
+      tr.addEventListener("touchstart", (evt) => {
+        startX = evt.touches[0].clientX;
+        isSwiping = false;
       }, {passive: true});
       
-      tr.addEventListener("touchmove", evt=>{
-        if (isScrolling) return;
-        let moveX=evt.touches[0].clientX - startX;
-        // Only trigger if movement is primarily horizontal
-        if (Math.abs(moveX) > 5) {
+      tr.addEventListener("touchmove", (evt) => {
+        const currentX = evt.touches[0].clientX;
+        const diffX = currentX - startX;
+        
+        // Only consider it a swipe if movement is primarily horizontal
+        if (Math.abs(diffX) > 10) {
+          isSwiping = true;
           evt.preventDefault();
-          tr.style.transform=`translateX(${moveX}px)`;
-          tr.style.background = moveX>0 ? "#FFF3CD" : moveX<0 ? "#F8D7DA" : "#fff";
-        } else {
-          isScrolling = true;
+          tr.style.transform = `translateX(${diffX}px)`;
+          tr.style.background = diffX > 0 ? "#FFF3CD" : "#F8D7DA";
         }
       }, {passive: false});
       
-      tr.addEventListener("touchend", evt=>{
-        let endX=evt.changedTouches[0].clientX;
-        let diff=endX-startX;
-        tr.style.transform="translateX(0px)";
-        tr.style.background="#fff";
-        if(!isScrolling && Math.abs(diff) > 100) {
-          if(diff>0) editTransaction(cursor.value);   
-          else deleteTransaction(cursor.value.id); 
+      tr.addEventListener("touchend", (evt) => {
+        const endX = evt.changedTouches[0].clientX;
+        const diffX = endX - startX;
+        
+        tr.style.transform = "translateX(0px)";
+        tr.style.background = "#fff";
+        
+        if (isSwiping && Math.abs(diffX) > 100) {
+          if (diffX > 0) {
+            editTransaction(cursor.value);
+          } else {
+            deleteTransaction(cursor.value.id);
+          }
         }
       }, {passive: true});
 
       tbody.appendChild(tr);
-      total+=cursor.value.amount;
+      total += cursor.value.amount;
       cursor.continue();
+    } else {
+      document.getElementById("totalAmount").textContent = total.toFixed(2);
     }
-    document.getElementById("totalAmount").textContent=total.toFixed(2);
   };
 }
 
@@ -162,13 +170,13 @@ function editTransaction(data){
   document.getElementById("description").value = data.description;
   document.getElementById("amount").value = data.amount;
   editId = data.id;
-  document.querySelector("button[type='submit']").textContent="Update Transaction";
+  document.querySelector("button[type='submit']").textContent = "Update Transaction";
 }
 
 // Delete transaction
 function deleteTransaction(id){
   if(confirm("Delete this transaction?")){
-    db.transaction("transactions","readwrite").objectStore("transactions").delete(id).onsuccess=displayTransactions;
+    db.transaction("transactions","readwrite").objectStore("transactions").delete(id).onsuccess = displayTransactions;
   }
 }
 
