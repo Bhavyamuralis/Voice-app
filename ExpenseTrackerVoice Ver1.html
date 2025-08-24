@@ -114,6 +114,10 @@
     background: var(--secondary);
   }
 
+  .btn-export {
+    background: var(--success);
+  }
+
   /* Toolbar */
   .toolbar {
     display: flex;
@@ -124,7 +128,7 @@
     gap: 10px;
   }
 
-  .switch, .lang-btn {
+  .switch, .lang-btn, .export-btn {
     cursor: pointer;
     padding: 10px 16px;
     border-radius: 50px;
@@ -137,7 +141,7 @@
     transition: all 0.3s ease;
   }
 
-  .switch:active, .lang-btn:active {
+  .switch:active, .lang-btn:active, .export-btn:active {
     transform: scale(0.95);
   }
 
@@ -151,7 +155,7 @@
     color: white;
   }
 
-  .lang-btn {
+  .lang-btn, .export-btn {
     background: var(--light);
     color: var(--primary);
   }
@@ -177,11 +181,34 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .date-header:hover {
+    background-color: #e2e6ea;
+  }
+
+  .date-header i {
+    transition: transform 0.3s ease;
+  }
+
+  .date-header.collapsed i {
+    transform: rotate(-90deg);
   }
 
   .date-total {
     font-weight: 700;
     color: var(--primary);
+  }
+
+  .date-content {
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+
+  .date-content.collapsed {
+    max-height: 0;
   }
 
   .category-group {
@@ -273,6 +300,17 @@
     gap: 8px;
     justify-content: flex-end;
     margin-top: 8px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    height: 0;
+    overflow: hidden;
+  }
+
+  .expense-item.show-actions .swipe-actions {
+    opacity: 1;
+    transform: translateY(0);
+    height: auto;
   }
 
   .swipe-btn {
@@ -346,6 +384,11 @@
     100% { transform: scale(1); }
   }
 
+  @keyframes swipe {
+    from { transform: translateX(0); }
+    to { transform: translateX(-80px); }
+  }
+
   .animate-fadeIn {
     animation: fadeIn 0.4s ease forwards;
   }
@@ -413,7 +456,7 @@
       align-items: stretch;
     }
     
-    .switch, .lang-btn {
+    .switch, .lang-btn, .export-btn {
       width: 100%;
       justify-content: center;
     }
@@ -472,6 +515,60 @@
     opacity: .3;
     transition: 0s;
   }
+
+  /* Swipeable item */
+  .expense-item {
+    position: relative;
+    transition: transform 0.3s ease;
+  }
+
+  .expense-item.swiped {
+    transform: translateX(-80px);
+  }
+
+  .expense-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid var(--light-gray);
+    position: relative;
+    z-index: 1;
+  }
+
+  .expense-actions {
+    position: absolute;
+    right: -80px;
+    top: 0;
+    width: 80px;
+    height: 100%;
+    display: flex;
+    transition: right 0.3s ease;
+  }
+
+  .expense-item.swiped .expense-actions {
+    right: 0;
+  }
+
+  .action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .action-edit {
+    background: var(--warning);
+  }
+
+  .action-delete {
+    background: var(--danger);
+  }
 </style>
 </head>
 <body>
@@ -483,6 +580,10 @@
   <button class="lang-btn" id="langBtn">
     <i class="fas fa-language"></i>
     <span id="langText">Telugu</span>
+  </button>
+  <button class="export-btn" id="exportBtn">
+    <i class="fas fa-file-export"></i>
+    <span>Export CSV</span>
   </button>
   <button class="switch" id="stayToggle">
     <i class="fas fa-power-off"></i>
@@ -526,6 +627,9 @@
       <h3><i class="fas fa-history"></i> Expense History</h3>
       <div id="recordsContainer" class="records-container"></div>
       <div class="total-display" id="totalDisplay">Total: ₹0</div>
+      <button class="btn btn-export" onclick="exportToCSV()">
+        <i class="fas fa-file-export"></i> Export to CSV
+      </button>
     </div>
   </div>
 </div>
@@ -564,12 +668,14 @@ let currentLang = "te-IN"; // default Telugu
 let stayOn = false;
 let speechRecognition = null;
 let recognitionTimeout = null;
+let collapsedDates = {}; // Track which dates are collapsed
 
 // DOM Elements
 const stayToggle = document.getElementById("stayToggle");
 const stayText = document.getElementById("stayText");
 const langBtn = document.getElementById("langBtn");
 const langText = document.getElementById("langText");
+const exportBtn = document.getElementById("exportBtn");
 const categoryView = document.getElementById("categoryView");
 const subcategoryView = document.getElementById("subcategoryView");
 const voiceView = document.getElementById("voiceView");
@@ -586,6 +692,7 @@ function initApp() {
   // Set up event listeners
   stayToggle.addEventListener("click", toggleStayMode);
   langBtn.addEventListener("click", toggleLanguage);
+  exportBtn.addEventListener("click", () => showView('recordsView'));
   
   // Render categories
   renderCategories();
@@ -888,6 +995,12 @@ function saveRecord(cat, subcat, desc, amt) {
   loadRecords();
 }
 
+// Toggle date group collapse
+function toggleDateGroup(date) {
+  collapsedDates[date] = !collapsedDates[date];
+  loadRecords();
+}
+
 // Load records from localStorage and group by date and category
 function loadRecords() {
   const records = JSON.parse(localStorage.getItem("expenses") || "[]");
@@ -940,12 +1053,17 @@ function loadRecords() {
     
     // Date header
     const dateHeader = document.createElement('div');
-    dateHeader.className = 'date-header';
+    dateHeader.className = `date-header ${collapsedDates[date] ? 'collapsed' : ''}`;
     dateHeader.innerHTML = `
-      <span>${date}</span>
+      <span><i class="fas fa-chevron-down"></i> ${date}</span>
       <span class="date-total">₹${dateTotal.toFixed(2)}</span>
     `;
+    dateHeader.onclick = () => toggleDateGroup(date);
     dateGroup.appendChild(dateHeader);
+    
+    // Date content
+    const dateContent = document.createElement('div');
+    dateContent.className = `date-content ${collapsedDates[date] ? 'collapsed' : ''}`;
     
     // Add category groups
     for (const category in recordsByCategory) {
@@ -1016,6 +1134,7 @@ function loadRecords() {
         
         // Create action row
         const actionRow = document.createElement('tr');
+        actionRow.className = 'action-row';
         actionRow.appendChild(actionCell);
         
         tbody.appendChild(row);
@@ -1024,13 +1143,59 @@ function loadRecords() {
       
       table.appendChild(tbody);
       categoryGroup.appendChild(table);
-      dateGroup.appendChild(categoryGroup);
+      dateContent.appendChild(categoryGroup);
     }
     
+    dateGroup.appendChild(dateContent);
     recordsContainer.appendChild(dateGroup);
   }
   
   totalDisplay.textContent = `Total: ₹${grandTotal.toFixed(2)}`;
+  
+  // Initialize swipe functionality
+  initSwipeListeners();
+}
+
+// Initialize swipe functionality for expense items
+function initSwipeListeners() {
+  const expenseItems = document.querySelectorAll('.expense-item');
+  
+  expenseItems.forEach(item => {
+    let startX, currentX, diffX;
+    let isSwiped = false;
+    
+    item.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isSwiped = item.classList.contains('swiped');
+    });
+    
+    item.addEventListener('touchmove', (e) => {
+      if (!startX) return;
+      
+      currentX = e.touches[0].clientX;
+      diffX = currentX - startX;
+      
+      // Only allow left swipe
+      if (diffX < 0) {
+        e.preventDefault();
+        item.style.transform = `translateX(${Math.max(diffX, -80)}px)`;
+      }
+    });
+    
+    item.addEventListener('touchend', () => {
+      if (!startX) return;
+      
+      // If swiped more than 40px, toggle swiped state
+      if (diffX < -40) {
+        item.classList.add('swiped');
+      } else {
+        item.classList.remove('swiped');
+      }
+      
+      item.style.transform = '';
+      startX = null;
+    });
+  });
 }
 
 // Edit record by ID
@@ -1038,80 +1203,114 @@ function editRecordById(id) {
   let records = JSON.parse(localStorage.getItem("expenses") || "[]");
   const recordIndex = records.findIndex(r => r.id == id);
   
-  if (recordIndex === -1) return;
+  if (recordIndex === -1) {
+    showToast("Record not found");
+    return;
+  }
   
   const record = records[recordIndex];
   
-  const newDesc = prompt("Edit Description", record.description);
-  if (newDesc === null) return;
+  // In a real app, you would show an edit form
+  // For this demo, we'll just show a prompt
+  const newAmount = parseFloat(prompt("Enter new amount:", record.amount));
   
-  const newAmt = parseFloat(prompt("Edit Amount", record.amount));
-  if (isNaN(newAmt)) return;
-  
-  records[recordIndex].description = newDesc;
-  records[recordIndex].amount = newAmt;
-  localStorage.setItem("expenses", JSON.stringify(records));
-  loadRecords();
-  
-  showToast("Expense updated successfully");
+  if (!isNaN(newAmount) && newAmount > 0) {
+    records[recordIndex].amount = newAmount;
+    localStorage.setItem("expenses", JSON.stringify(records));
+    loadRecords();
+    showToast("Record updated");
+  } else {
+    showToast("Invalid amount");
+  }
 }
 
 // Delete record by ID
 function deleteRecordById(id) {
-  if (!confirm("Are you sure you want to delete this expense?")) return;
-  
   let records = JSON.parse(localStorage.getItem("expenses") || "[]");
   const recordIndex = records.findIndex(r => r.id == id);
   
-  if (recordIndex === -1) return;
+  if (recordIndex === -1) {
+    showToast("Record not found");
+    return;
+  }
   
-  const deletedRecord = records.splice(recordIndex, 1)[0];
-  localStorage.setItem("expenses", JSON.stringify(records));
-  loadRecords();
-  
-  showToast(`Deleted: ${deletedRecord.description} - ₹${deletedRecord.amount}`);
+  if (confirm("Are you sure you want to delete this record?")) {
+    records.splice(recordIndex, 1);
+    localStorage.setItem("expenses", JSON.stringify(records));
+    loadRecords();
+    showToast("Record deleted");
+  }
 }
 
-// Show toast notification
-function showToast(message, duration = 3000) {
+// Export to CSV
+function exportToCSV() {
+  const records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  
+  if (records.length === 0) {
+    showToast("No records to export");
+    return;
+  }
+  
+  // Create CSV content
+  let csvContent = "Date,Category,Subcategory,Description,Amount\n";
+  
+  records.forEach(record => {
+    csvContent += `"${record.date}","${record.category}","${record.subcategory}","${record.description}",${record.amount}\n`;
+  });
+  
+  // Create download link
+  const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "expenses.csv");
+  document.body.appendChild(link);
+  
+  // Trigger download
+  link.click();
+  document.body.removeChild(link);
+  
+  showToast("CSV exported successfully");
+}
+
+// Show toast message
+function showToast(message) {
   // Remove existing toast if any
-  const existingToast = document.getElementById('appToast');
+  const existingToast = document.querySelector('.toast');
   if (existingToast) {
     existingToast.remove();
   }
   
   // Create toast element
   const toast = document.createElement('div');
-  toast.id = 'appToast';
+  toast.className = 'toast';
   toast.textContent = message;
   toast.style.cssText = `
     position: fixed;
     bottom: 100px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.7);
     color: white;
-    padding: 12px 20px;
+    padding: 12px 24px;
     border-radius: 50px;
     z-index: 1000;
-    font-size: 14px;
+    font-weight: 500;
     animation: fadeIn 0.3s ease;
   `;
   
   document.body.appendChild(toast);
   
-  // Remove toast after duration
+  // Remove toast after 3 seconds
   setTimeout(() => {
     if (toast.parentNode) {
-      toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s ease';
+      toast.style.animation = 'fadeOut 0.3s ease forwards';
       setTimeout(() => toast.remove(), 300);
     }
-  }, duration);
+  }, 3000);
 }
 
-// Initialize the app when the page loads
-window.addEventListener('DOMContentLoaded', initApp);
+// Initialize the app when DOM is loaded
+document.addEventListener('DOMContentLoaded', initApp);
 </script>
 </body>
 </html>
