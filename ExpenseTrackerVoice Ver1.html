@@ -215,15 +215,17 @@
 
   .expense-table th {
     text-align: left;
-    padding: 8px 0;
+    padding: 12px 0;
     color: var(--text-secondary);
     font-weight: 600;
     border-bottom: 1px solid var(--light-gray);
   }
 
   .expense-table td {
-    padding: 12px 0;
+    padding: 16px 0;
     border-bottom: 1px solid var(--light-gray);
+    vertical-align: top;
+    line-height: 1.5;
   }
 
   .expense-table tr:last-child td {
@@ -439,6 +441,10 @@
     .expense-table {
       font-size: 14px;
     }
+    
+    .expense-table td {
+      padding: 12px 0;
+    }
   }
 
   /* Ripple effect */
@@ -534,11 +540,25 @@
 <script>
 // Data and State Management
 let categories = {
-  "Food": ["Breakfast", "Lunch", "Dinner", "Snacks", "Groceries"],
-  "Transport": ["Bus", "Auto", "Cab", "Fuel", "Parking"],
-  "Shopping": ["Clothes", "Electronics", "Essentials", "Gifts"],
-  "Bills": ["Electricity", "Water", "Mobile", "Internet", "Rent"],
-  "Entertainment": ["Movies", "Dining Out", "Games", "Streaming"]
+  "Needs": [
+    "House Rent", "Electricity Bill", "Cable Bill", "Phone Bill", 
+    "Transportation", "Beverages/Dairy", "Gas", "Rice", "Groceries", 
+    "Vegetable", "Non Vegitable", "Fruits", "Bakery/Snacks", "Cleaners/Personal Care"
+  ],
+  "Wants": [
+    "Repairs & Maintenance", "Shopping", "Entertainment", "Vacation",
+    "Charity/Donations/Gifts", "Clothing/Beauty", "EatOut", "Other"
+  ],
+  "Medical/Healthcare": [
+    "Hospital", "Medicine", "Lab Reports"
+  ],
+  "Education": [
+    "Exam Fee", "Books", "Stationery", "Admission Fee", "Tutoring Fee"
+  ],
+  "Banking/Finance": [
+    "Debts", "Insurance", "ATM/SMS Charges", "Fund Transfer Charges",
+    "Salary Deductions", "Tax", "Account Maintenance Charges", "Losses On Investment"
+  ]
 };
 
 let currentCategory = "";
@@ -637,11 +657,11 @@ function renderCategories() {
 // Get icon for category
 function getCategoryIcon(category) {
   const icons = {
-    "Food": "utensils",
-    "Transport": "bus",
-    "Shopping": "shopping-bag",
-    "Bills": "file-invoice-dollar",
-    "Entertainment": "film"
+    "Needs": "home",
+    "Wants": "shopping-bag",
+    "Medical/Healthcare": "heartbeat",
+    "Education": "graduation-cap",
+    "Banking/Finance": "credit-card"
   };
   
   return icons[category] || "folder";
@@ -667,29 +687,44 @@ function showSubcategories(cat) {
 // Get icon for subcategory
 function getSubcategoryIcon(subcategory) {
   const icons = {
-    "Breakfast": "coffee",
-    "Lunch": "hamburger",
-    "Dinner": "utensils",
-    "Snacks": "cookie",
+    "House Rent": "home",
+    "Electricity Bill": "bolt",
+    "Cable Bill": "tv",
+    "Phone Bill": "phone",
+    "Transportation": "bus",
+    "Beverages/Dairy": "coffee",
+    "Gas": "gas-pump",
+    "Rice": "utensils",
     "Groceries": "shopping-basket",
-    "Bus": "bus",
-    "Auto": "auto-rickshaw",
-    "Cab": "taxi",
-    "Fuel": "gas-pump",
-    "Parking": "parking",
-    "Clothes": "tshirt",
-    "Electronics": "laptop",
-    "Essentials": "shopping-bag",
-    "Gifts": "gift",
-    "Electricity": "bolt",
-    "Water": "tint",
-    "Mobile": "mobile",
-    "Internet": "wifi",
-    "Rent": "home",
-    "Movies": "film",
-    "Dining Out": "utensils",
-    "Games": "gamepad",
-    "Streaming": "tv"
+    "Vegetable": "carrot",
+    "Non Vegitable": "drumstick",
+    "Fruits": "apple-alt",
+    "Bakery/Snacks": "cookie",
+    "Cleaners/Personal Care": "soap",
+    "Repairs & Maintenance": "tools",
+    "Shopping": "shopping-cart",
+    "Entertainment": "film",
+    "Vacation": "umbrella-beach",
+    "Charity/Donations/Gifts": "gift",
+    "Clothing/Beauty": "tshirt",
+    "EatOut": "utensils",
+    "Other": "question-circle",
+    "Hospital": "hospital",
+    "Medicine": "pills",
+    "Lab Reports": "file-medical",
+    "Exam Fee": "file-alt",
+    "Books": "book",
+    "Stationery": "pencil-alt",
+    "Admission Fee": "user-graduate",
+    "Tutoring Fee": "chalkboard-teacher",
+    "Debts": "money-bill-wave",
+    "Insurance": "shield-alt",
+    "ATM/SMS Charges": "money-check",
+    "Fund Transfer Charges": "exchange-alt",
+    "Salary Deductions": "file-invoice-dollar",
+    "Tax": "calculator",
+    "Account Maintenance Charges": "credit-card",
+    "Losses On Investment": "chart-line"
   };
   
   return icons[subcategory] || "list";
@@ -1025,6 +1060,7 @@ function addSwipeFunctionality(element, id) {
   element.addEventListener('touchstart', (e) => {
     startX = e.touches[0].clientX;
     isSwiping = true;
+    element.querySelector('.swipe-content').style.transition = 'none';
   });
   
   element.addEventListener('touchmove', (e) => {
@@ -1078,6 +1114,77 @@ function addSwipeFunctionality(element, id) {
       }
     } else {
       // Reset swipe classes if not enough distance
+      element.classList.remove('swipe-left', 'swipe-right');
+    }
+  });
+  
+  // Add mouse events for desktop testing
+  element.addEventListener('mousedown', (e) => {
+    startX = e.clientX;
+    isSwiping = true;
+    element.querySelector('.swipe-content').style.transition = 'none';
+  });
+  
+  element.addEventListener('mousemove', (e) => {
+    if (!isSwiping) return;
+    currentX = e.clientX;
+    
+    const diff = currentX - startX;
+    
+    // Limit swipe distance
+    if (Math.abs(diff) > 120) {
+      return;
+    }
+    
+    // Move the content while swiping
+    element.querySelector('.swipe-content').style.transform = `translateX(${diff}px)`;
+    
+    // Show appropriate action background
+    if (diff < -swipeThreshold) {
+      element.classList.add('swipe-left');
+      element.classList.remove('swipe-right');
+    } else if (diff > swipeThreshold) {
+      element.classList.add('swipe-right');
+      element.classList.remove('swipe-left');
+    } else {
+      element.classList.remove('swipe-left', 'swipe-right');
+    }
+  });
+  
+  element.addEventListener('mouseup', () => {
+    if (!isSwiping) return;
+    isSwiping = false;
+    
+    const diff = currentX - startX;
+    
+    // Reset position with animation
+    element.querySelector('.swipe-content').style.transform = '';
+    element.querySelector('.swipe-content').style.transition = 'transform 0.3s ease';
+    
+    setTimeout(() => {
+      element.querySelector('.swipe-content').style.transition = '';
+    }, 300);
+    
+    // If swipe distance is sufficient
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff < 0) {
+        // Left swipe - delete
+        deleteRecordById(id);
+      } else {
+        // Right swipe - edit
+        editRecordById(id);
+      }
+    } else {
+      // Reset swipe classes if not enough distance
+      element.classList.remove('swipe-left', 'swipe-right');
+    }
+  });
+  
+  element.addEventListener('mouseleave', () => {
+    if (isSwiping) {
+      isSwiping = false;
+      element.querySelector('.swipe-content').style.transform = '';
+      element.querySelector('.swipe-content').style.transition = 'transform 0.3s ease';
       element.classList.remove('swipe-left', 'swipe-right');
     }
   });
