@@ -283,10 +283,12 @@
   .expense-subcategory {
     font-weight: 600;
     color: var(--text-primary);
+    margin-bottom: 4px;
   }
 
   .expense-description {
     color: var(--text-secondary);
+    font-size: 0.9em;
   }
 
   .expense-amount {
@@ -379,9 +381,8 @@
   }
 
   @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
   }
 
   @keyframes swipe {
@@ -520,7 +521,9 @@
   .expense-item {
     position: relative;
     transition: transform 0.3s ease;
-    cursor: pointer;
+    overflow: hidden;
+    border-bottom: 1px solid var(--light-gray);
+    background: white;
   }
 
   .expense-item.swiped {
@@ -532,10 +535,13 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: white;
-    border-bottom: 1px solid var(--light-gray);
     position: relative;
     z-index: 1;
+    background: white;
+  }
+
+  .expense-info {
+    flex: 1;
   }
 
   .expense-actions {
@@ -908,21 +914,10 @@ function startVoice(subcat) {
     showToast("Error: " + event.error);
     showView('subcategoryView');
     
-    // Clear timeout on error
-    if (recognitionTimeout) {
-      clearTimeout(recognitionTimeout);
-      recognitionTimeout = null;
-    }
   };
   
   speechRecognition.onend = function() {
     console.log("Speech recognition ended");
-    
-    // Clear timeout
-    if (recognitionTimeout) {
-      clearTimeout(recognitionTimeout);
-      recognitionTimeout = null;
-    }
   };
   
   // Start recognition
@@ -942,12 +937,6 @@ function startVoice(subcat) {
   } catch (error) {
     showToast("Error starting speech recognition");
     console.error("Error starting speech recognition:", error);
-    
-    // Clear timeout on error
-    if (recognitionTimeout) {
-      clearTimeout(recognitionTimeout);
-      recognitionTimeout = null;
-    }
   }
 }
 
@@ -1121,8 +1110,7 @@ function loadRecords() {
       const thead = document.createElement('thead');
       thead.innerHTML = `
         <tr>
-          <th>Subcategory</th>
-          <th>Description</th>
+          <th>Details</th>
           <th>Amount</th>
         </tr>
       `;
@@ -1144,7 +1132,7 @@ function loadRecords() {
         const contentDiv = document.createElement('div');
         contentDiv.className = 'expense-content';
         contentDiv.innerHTML = `
-          <div style="flex: 1;">
+          <div class="expense-info">
             <div class="expense-subcategory">${record.subcategory}</div>
             <div class="expense-description">${record.description}</div>
           </div>
@@ -1233,7 +1221,7 @@ function loadRecords() {
         // Create table row for the item
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 3;
+        cell.colSpan = 2;
         cell.style.padding = '0';
         cell.appendChild(itemContainer);
         row.appendChild(cell);
