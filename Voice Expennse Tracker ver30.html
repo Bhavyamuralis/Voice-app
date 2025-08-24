@@ -1,704 +1,581 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Expense Tracker with Telugu Support</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      margin: 0; 
-      padding: 20px; 
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      color: #333;
-      min-height: 100vh;
-    }
-    
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    h2 { 
-      text-align: center; 
-      color: #2c3e50;
-      margin-bottom: 25px;
-      font-size: 28px;
-    }
-    
-    .hidden { 
-      display: none; 
-    }
-    
-    .btn { 
-      padding: 12px 18px; 
-      margin: 8px; 
-      border: none; 
-      border-radius: 8px; 
-      cursor: pointer; 
-      font-size: 16px; 
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    }
-    
-    .category-btn { 
-      background: #4CAF50; 
-      color: white; 
-      width: 100%; 
-    }
-    
-    .subcategory-btn { 
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      text-align: left;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 12px;
-      color: white;
-      width: 100%;
-      transition: all 0.3s;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .subcategory-btn i {
-      margin-right: 15px;
-      font-size: 24px;
-      width: 30px;
-    }
-    
-    .food { background: linear-gradient(to right, #FF416C, #FF4B2B); }
-    .transport { background: linear-gradient(to right, #36D1DC, #5B86E5); }
-    .shopping { background: linear-gradient(to right, #f46b45, #eea849); }
-    .bills { background: linear-gradient(to right, #0ba360, #3cba92); }
-    
-    .action-btn { 
-      background: #FF9800; 
-      color: white; 
-      padding: 12px 20px;
-      font-weight: bold;
-    }
-    
-    #status { 
-      margin: 15px 0; 
-      font-weight: bold; 
-      text-align: center; 
-      padding: 10px;
-      border-radius: 6px;
-      background: #e3f2fd;
-    }
-    
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 25px; 
-      background: white; 
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    
-    th, td { 
-      padding: 12px; 
-      border: 1px solid #ddd; 
-      text-align: center; 
-    }
-    
-    th { 
-      background: #34495e; 
-      color: white; 
-      font-weight: 600;
-    }
-    
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    
-    tr:hover {
-      background-color: #f1f8ff;
-    }
-    
-    .current-selection { 
-      background: #e1f5fe; 
-      padding: 15px; 
-      border-radius: 8px; 
-      margin: 15px 0; 
-      text-align: center;
-      font-size: 18px;
-      font-weight: 500;
-    }
-    
-    .list-controls {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin: 20px 0;
-    }
-    
-    .language-selection {
-      text-align: center;
-      margin: 15px 0;
-    }
-    
-    .lang-btn {
-      background: #607D8B;
-      color: white;
-      padding: 10px 15px;
-      margin: 0 5px;
-    }
-    
-    .lang-btn.active {
-      background: #455A64;
-      box-shadow: 0 0 0 2px rgba(96, 125, 139, 0.4);
-    }
-    
-    .section-title {
-      color: #2c3e50;
-      border-bottom: 2px solid #3498db;
-      padding-bottom: 8px;
-      margin-top: 25px;
-    }
-    
-    /* Swipeable item styles */
-    .swipe-item {
-      position: relative;
-      overflow: hidden;
-      border-radius: 8px;
-      margin: 10px 0;
-    }
-    
-    .swipe-content {
-      padding: 15px;
-      background: white;
-      position: relative;
-      z-index: 10;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    
-    .swipe-actions {
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      display: flex;
-      border-radius: 8px;
-    }
-    
-    .swipe-action {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      color: white;
-      font-weight: bold;
-      transform: translateX(100%);
-      transition: transform 0.3s ease;
-    }
-    
-    .swipe-delete {
-      background: #FF5252;
-      justify-content: flex-end;
-      padding-right: 20px;
-    }
-    
-    .swipe-edit {
-      background: #FF9800;
-      justify-content: flex-start;
-      padding-left: 20px;
-    }
-    
-    /* Telugu font */
-    @font-face {
-      font-family: 'Telugu';
-      src: local('Nirmala UI'), local('Gautami');
-      unicode-range: U+0C00-0C7F;
-    }
-    
-    .telugu-text {
-      font-family: 'Telugu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      font-size: 18px;
-    }
-    
-    /* Animation for swipe */
-    .swipe-item.swipe-left .swipe-delete {
-      transform: translateX(0);
-    }
-    
-    .swipe-item.swipe-right .swipe-edit {
-      transform: translateX(0);
-    }
-    
-    /* Responsive design */
-    @media (max-width: 768px) {
-      .container {
-        padding: 15px;
-      }
-      
-      .btn {
-        padding: 10px 15px;
-        font-size: 14px;
-      }
-      
-      .list-controls {
-        flex-direction: column;
-      }
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Voice Expense Tracker</title>
+<style>
+  :root{
+    --bg:#0f172a;          /* slate-900 */
+    --card:#111827;        /* gray-900 */
+    --muted:#1f2937;       /* gray-800 */
+    --text:#e5e7eb;        /* gray-200 */
+    --soft:#94a3b8;        /* slate-400 */
+    --accent:#22c55e;      /* green-500 */
+    --danger:#ef4444;      /* red-500 */
+    --warn:#f59e0b;        /* amber-500 */
+    --info:#3b82f6;        /* blue-500 */
+    --round:18px;
+    --pad:14px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Noto Sans",sans-serif;
+    background:linear-gradient(180deg,#0b1223 0%, #0f172a 60%, #0b1223 100%);
+    color:var(--text);
+  }
+  .wrap{
+    max-width:900px; margin:0 auto; padding:clamp(10px,2vw,20px);
+  }
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom:12px;
+  }
+  h1{font-size:1.25rem; margin:.25rem 0}
+  .sub{font-size:.8rem; color:var(--soft)}
+  .card{
+    background:var(--card); border:1px solid #1f2937; border-radius:var(--round);
+    box-shadow:0 8px 24px rgba(0,0,0,.35);
+  }
+  .pad{padding:var(--pad)}
+  .grid{
+    display:grid; gap:10px;
+    grid-template-columns:repeat(2,1fr);
+  }
+  @media (min-width:560px){ .grid{grid-template-columns:repeat(3,1fr);} }
+  @media (min-width:840px){ .grid{grid-template-columns:repeat(4,1fr);} }
+
+  /* Buttons */
+  .btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; padding:14px 12px; border:none; color:#0b1020; font-weight:700;
+    background:#e2e8f0; border-radius:14px; cursor:pointer; transition:transform .06s ease, filter .2s ease;
+    box-shadow:inset 0 -2px 0 rgba(0,0,0,.15), 0 10px 22px rgba(0,0,0,.25);
+    text-transform:capitalize;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn.food{background:#fef3c7}       /* amber-100 */
+  .btn.transport{background:#dbeafe}  /* blue-100 */
+  .btn.shopping{background:#fce7f3}   /* pink-100 */
+  .btn.bills{background:#dcfce7}      /* green-100 */
+  .btn.other{background:#e5e7eb}      /* gray-200 */
+
+  .back{
+    background:transparent; color:var(--soft); border:1px dashed #334155; padding:8px 12px; border-radius:10px; cursor:pointer;
+  }
+
+  /* Table */
+  .table-wrap{overflow:auto}
+  table{width:100%; border-collapse:separate; border-spacing:0 8px; font-size:.95rem}
+  thead th{font-weight:700; color:var(--soft); text-align:left; padding:10px 8px}
+  tbody td{
+    background:var(--muted); padding:12px 8px; vertical-align:middle;
+    border-top:1px solid #293244; border-bottom:1px solid #0b1223;
+  }
+  tbody tr{position:relative; border-radius:12px; }
+  tbody tr td:first-child{border-top-left-radius:12px; border-bottom-left-radius:12px;}
+  tbody tr td:last-child{border-top-right-radius:12px; border-bottom-right-radius:12px;}
+  tfoot td{padding:14px 8px; color:#e2e8f0; font-weight:800}
+  .right{text-align:right}
+
+  /* Swipe affordances */
+  .swipe-layer{
+    position:absolute; inset:0; border-radius:12px; z-index:0; pointer-events:none;
+    display:flex; align-items:center; justify-content:space-between; padding:0 12px; opacity:.85;
+  }
+  .swipe-left{background:var(--danger)}
+  .swipe-right{background:var(--warn)}
+  .row-content{position:relative; z-index:1; transition:transform .15s ease}
+
+  /* Footer actions */
+  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .pill{
+    background:#0b1223; color:var(--soft); border:1px solid #223049; padding:8px 12px; border-radius:999px; font-size:.85rem;
+  }
+  .link{cursor:pointer; text-decoration:underline; color:#93c5fd}
+
+  /* Modal */
+  .modal{
+    position:fixed; inset:0; display:none; align-items:flex-end; justify-content:center; z-index:40;
+    background:rgba(2,6,23,.6);
+  }
+  .sheet{
+    width:100%; max-width:900px; background:var(--card); border-top-left-radius:22px; border-top-right-radius:22px;
+    padding:18px; box-shadow:0 -12px 30px rgba(0,0,0,.5);
+  }
+  .row{display:flex; gap:10px; margin:8px 0}
+  .row label{flex:0 0 110px; color:var(--soft)}
+  .row input, .row select{
+    flex:1; background:#0b1223; color:var(--text); border:1px solid #223049; border-radius:10px; padding:10px 12px; font-size:1rem;
+  }
+  .modal .btn{box-shadow:none}
+
+  /* Mic banner */
+  .mic-banner{
+    margin-top:12px; font-size:.9rem; color:#cbd5e1;
+  }
+  .badge{
+    display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:#0b1223; border:1px solid #223049; border-radius:999px;
+  }
+  .blink{animation: pulse 1.2s infinite}
+  @keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+
+  .empty{
+    color:var(--soft); text-align:center; padding:16px; border:1px dashed #223049; border-radius:14px; background:#0b1223;
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2>Expense Tracker <span class="telugu-text">- ఖర్చు ట్రాకర్</span></h2>
-
-    <!-- Language Selection -->
-    <div class="language-selection">
-      <div class="section-title">Select Language / భాషను ఎంచుకోండి</div>
-      <button id="english-lang-btn" class="btn lang-btn active">English</button>
-      <button id="telugu-lang-btn" class="btn lang-btn">తెలుగు</button>
-    </div>
-
-    <!-- Current Selection Display -->
-    <div id="current-selection" class="current-selection hidden">
-      <h3>Adding items to: <span id="selected-category-display"></span> > <span id="selected-subcategory-display"></span></h3>
-      <h3 class="telugu-text hidden">అంశాలను జోడిస్తుంది: <span id="selected-category-display-telugu"></span> > <span id="selected-subcategory-display-telugu"></span></h3>
-    </div>
-
-    <!-- Category Selection -->
-    <div id="category-section">
-      <h3 class="section-title">Select Category / <span class="telugu-text">కేటగరీని ఎంచుకోండి</span></h3>
-      <div id="category-list"></div>
-    </div>
-
-    <!-- Subcategory Selection -->
-    <div id="subcategory-section" class="hidden">
-      <h3 class="section-title">Select Subcategory / <span class="telugu-text">ఉపకేటగరీని ఎంచుకోండి</span></h3>
-      <div id="subcategory-list"></div>
-      <div class="list-controls">
-        <button id="start-listening-btn" class="btn action-btn">Start Voice Input / <span class="telugu-text">వాయిస్ ఇన్పుట్ ప్రారంభించండి</span></button>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Voice Expense Tracker</h1>
+        <div class="sub">Tap → Subcategory → Speak: <em>“Milk 50”</em>. Last word = amount.</div>
       </div>
-    </div>
+      <button id="clearAll" class="back" title="Clear all records">Clear</button>
+    </header>
 
-    <p id="status"></p>
+    <!-- Category View -->
+    <section id="catView" class="card pad">
+      <h3 style="margin-top:0;">Categories</h3>
+      <div id="catGrid" class="grid"></div>
+    </section>
 
-    <!-- Table -->
-    <h3 class="section-title">Saved Records / <span class="telugu-text">సేవ్ చేయబడిన రికార్డులు</span></h3>
-    <div id="records-container">
-      <!-- Records will be displayed here with swipe functionality -->
-    </div>
+    <!-- Subcategory View -->
+    <section id="subView" class="card pad" style="display:none">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <h3 style="margin:0" id="subTitle">Choose Subcategory</h3>
+        <button id="backBtn" class="back">← Back</button>
+      </div>
+      <div id="subGrid" class="grid" style="margin-top:10px"></div>
+      <div id="micBanner" class="mic-banner" style="display:none">
+        <span class="badge"><span class="blink">●</span> Listening… say <strong>“description amount”</strong></span>
+      </div>
+    </section>
 
-    <!-- Edit Modal -->
-    <div id="edit-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-      <div style="background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px;">
-        <h3>Edit Record / <span class="telugu-text">రికార్డ్ సవరించండి</span></h3>
-        <div style="margin: 15px 0;">
-          <input type="text" id="edit-desc" placeholder="Description / వివరణ" style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd;">
-          <input type="number" id="edit-amount" placeholder="Amount / మొత్తం" min="0" step="0.01" style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd;">
-        </div>
-        <div class="list-controls">
-          <button id="save-edit-btn" class="btn action-btn">Save Changes / <span class="telugu-text">మార్పులను సేవ్ చేయండి</span></button>
-          <button id="cancel-edit-btn" class="btn action-btn">Cancel / <span class="telugu-text">రద్దు చేయండి</span></button>
-        </div>
+    <!-- Records -->
+    <section class="card pad" style="margin-top:12px">
+      <h3 style="margin:0 0 8px 0">Records</h3>
+      <div class="actions">
+        <span class="pill">Swipe ← to Delete</span>
+        <span class="pill">Swipe → to Edit</span>
+        <span class="pill">Speech lang: <code id="langBadge">te-IN</code></span>
+        <span id="exportBtn" class="link">Export JSON</span>
+      </div>
+      <div class="table-wrap" style="margin-top:12px">
+        <table id="recTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Subcat</th>
+              <th>Description</th>
+              <th class="right">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="recBody">
+            <!-- rows -->
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" class="right">Total</td>
+              <td class="right" id="totalCell">₹0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Edit Sheet -->
+  <div id="editModal" class="modal" role="dialog" aria-modal="true">
+    <div class="sheet">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong>Edit Record</strong>
+        <button id="closeEdit" class="back">Close</button>
+      </div>
+      <div class="row"><label>Date</label><input id="eDate" type="date"></div>
+      <div class="row"><label>Category</label><input id="eCat" type="text" disabled></div>
+      <div class="row"><label>Subcategory</label><input id="eSub" type="text" disabled></div>
+      <div class="row"><label>Description</label><input id="eDesc" type="text" placeholder="What was it?"></div>
+      <div class="row"><label>Amount</label><input id="eAmt" type="number" step="0.01" min="0" inputmode="decimal"></div>
+      <div class="row" style="justify-content:flex-end">
+        <button id="saveEdit" class="btn" style="max-width:200px">Save Changes</button>
       </div>
     </div>
   </div>
 
-  <script>
-    // Categories and Subcategories with Telugu translations
-    const categories = {
-      "Food": { 
-        subcategories: ["Groceries", "Restaurants", "Snacks"],
-        telugu: "ఆహారం",
-        subcategoriesTelugu: ["కిరాణా సామగ్రి", "రెస్టారెంట్లు", "స్నాక్స్"],
-        icon: "fa-utensils",
-        color: "food"
-      },
-      "Transport": { 
-        subcategories: ["Fuel", "Bus", "Taxi"],
-        telugu: "రవాణా",
-        subcategoriesTelugu: ["ఇంధనం", "బస్సు", "టాక్సీ"],
-        icon: "fa-car",
-        color: "transport"
-      },
-      "Shopping": { 
-        subcategories: ["Clothes", "Electronics", "Others"],
-        telugu: "షాపింగ్",
-        subcategoriesTelugu: ["బట్టలు", "ఎలక్ట్రానిక్స్", "ఇతరులు"],
-        icon: "fa-shopping-bag",
-        color: "shopping"
-      },
-      "Bills": { 
-        subcategories: ["Electricity", "Water", "Internet"],
-        telugu: "బిల్లులు",
-        subcategoriesTelugu: ["విద్యుత్తు", "నీరు", "ఇంటర్నెట్"],
-        icon: "fa-file-invoice-dollar",
-        color: "bills"
-      }
-    };
+<script>
+(() => {
+  // ======= Config =======
+  const SPEECH_LANG = 'te-IN'; // Telugu default. Change to 'en-IN' or any BCP-47 code if needed.
+  document.getElementById('langBadge').textContent = SPEECH_LANG;
 
-    let selectedCategory = "";
-    let selectedSubcategory = "";
-    let currentLanguage = "english";
-    let currentEditId = null;
+  const STORAGE_KEY = 'expenses_v1';
 
-    // Initialize
-    function loadCategories() {
-      const list = document.getElementById("category-list");
-      list.innerHTML = "";
-      
-      for (let cat in categories) {
-        const btn = document.createElement("button");
-        btn.className = "btn category-btn";
-        btn.innerHTML = currentLanguage === "english" ? cat : `${cat} <span class="telugu-text">(${categories[cat].telugu})</span>`;
-        btn.onclick = () => selectCategory(cat);
-        list.appendChild(btn);
-      }
-      
-      document.getElementById("category-section").classList.remove("hidden");
-      document.getElementById("subcategory-section").classList.add("hidden");
-      document.getElementById("current-selection").classList.add("hidden");
+  const CATEGORY_DATA = {
+    Food:       { class:'food',      subs:['Breakfast','Lunch','Dinner','Groceries','Snacks','Tea/Coffee','Milk'] },
+    Transport:  { class:'transport', subs:['Bus','Metro','Auto','Taxi','Fuel','Parking','Toll'] },
+    Shopping:   { class:'shopping',  subs:['Clothes','Electronics','Gadgets','Home','Gifts','Online'] },
+    Bills:      { class:'bills',     subs:['Electricity','Water','Internet','Mobile','Gas','Rent'] },
+    Other:      { class:'other',     subs:['Health','Education','Fees','Entertainment','Charity','Misc'] },
+  };
+
+  // ======= State =======
+  let currentCategory = null;
+  let currentSubcategory = null;
+  let editIndex = null; // index in array for editing
+
+  // ======= DOM =======
+  const catView = document.getElementById('catView');
+  const subView = document.getElementById('subView');
+  const catGrid = document.getElementById('catGrid');
+  const subGrid = document.getElementById('subGrid');
+  const subTitle = document.getElementById('subTitle');
+  const backBtn = document.getElementById('backBtn');
+  const micBanner = document.getElementById('micBanner');
+  const clearAllBtn = document.getElementById('clearAll');
+  const exportBtn = document.getElementById('exportBtn');
+
+  const recBody = document.getElementById('recBody');
+  const totalCell = document.getElementById('totalCell');
+
+  const editModal = document.getElementById('editModal');
+  const closeEdit = document.getElementById('closeEdit');
+  const eDate = document.getElementById('eDate');
+  const eCat  = document.getElementById('eCat');
+  const eSub  = document.getElementById('eSub');
+  const eDesc = document.getElementById('eDesc');
+  const eAmt  = document.getElementById('eAmt');
+  const saveEdit = document.getElementById('saveEdit');
+
+  // ======= Helpers =======
+  const fmtMoney = (n) => {
+    const val = Number(n || 0);
+    return new Intl.NumberFormat('en-IN', { maximumFractionDigits:2 }).format(val);
+  };
+  const todayISO = () => new Date().toISOString().slice(0,10);
+
+  const getData = () => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  };
+  const setData = (arr) => localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+
+  function renderCategories(){
+    currentCategory = null; currentSubcategory = null;
+    subView.style.display = 'none';
+    micBanner.style.display = 'none';
+    catView.style.display = 'block';
+    catGrid.innerHTML = '';
+    Object.entries(CATEGORY_DATA).forEach(([name, cfg]) => {
+      const b = document.createElement('button');
+      b.className = `btn ${cfg.class}`;
+      b.textContent = name;
+      b.onclick = () => openSubcats(name);
+      catGrid.appendChild(b);
+    });
+  }
+
+  function openSubcats(category){
+    currentCategory = category;
+    subTitle.textContent = `Choose Subcategory – ${category}`;
+    subGrid.innerHTML = '';
+    CATEGORY_DATA[category].subs.forEach(s => {
+      const b = document.createElement('button');
+      b.className = `btn ${CATEGORY_DATA[category].class}`;
+      b.textContent = s;
+      b.onclick = () => startVoiceFor(category, s);
+      subGrid.appendChild(b);
+    });
+    catView.style.display = 'none';
+    subView.style.display = 'block';
+  }
+
+  backBtn.addEventListener('click', renderCategories);
+
+  // ======= Speech Recognition =======
+  function startVoiceFor(category, subcat){
+    currentSubcategory = subcat;
+
+    const SR = window.webkitSpeechRecognition;
+    if(!SR){
+      alert('Speech recognition not supported in this browser. Please use Chrome on Android/desktop.');
+      return;
     }
 
-    function selectCategory(cat) {
-      selectedCategory = cat;
-      document.getElementById("category-section").classList.add("hidden");
-      
-      const list = document.getElementById("subcategory-list");
-      list.innerHTML = "";
-      
-      categories[cat].subcategories.forEach((sub, index) => {
-        const btn = document.createElement("button");
-        btn.className = `btn subcategory-btn ${categories[cat].color}`;
-        
-        const iconElement = document.createElement("i");
-        iconElement.className = `fas ${categories[cat].icon}`;
-        btn.appendChild(iconElement);
-        
-        const textElement = document.createElement("span");
-        textElement.innerHTML = currentLanguage === "english" ? sub : `${sub} <span class="telugu-text">(${categories[cat].subcategoriesTelugu[index]})</span>`;
-        btn.appendChild(textElement);
-        
-        btn.onclick = () => selectSubcategory(sub, index);
-        list.appendChild(btn);
-      });
-      
-      document.getElementById("subcategory-section").classList.remove("hidden");
-      
-      // Update current selection display
-      document.getElementById("selected-category-display").textContent = selectedCategory;
-      document.getElementById("selected-category-display-telugu").textContent = categories[cat].telugu;
-      document.getElementById("current-selection").classList.remove("hidden");
-      
-      if (currentLanguage === "telugu") {
-        document.querySelectorAll('.telugu-text').forEach(el => el.classList.remove('hidden'));
-      }
-    }
+    const rec = new SR();
+    rec.lang = SPEECH_LANG;
+    rec.continuous = false;
+    rec.interimResults = false;
 
-    function selectSubcategory(sub, index) {
-      selectedSubcategory = sub;
-      
-      // Update current selection display
-      document.getElementById("selected-subcategory-display").textContent = selectedSubcategory;
-      document.getElementById("selected-subcategory-display-telugu").textContent = 
-        categories[selectedCategory].subcategoriesTelugu[index];
-      
-      // Start voice input
-      startVoiceInput();
-    }
+    let heard = '';
 
-    // Language selection
-    document.getElementById("english-lang-btn").onclick = function() {
-      currentLanguage = "english";
-      this.classList.add("active");
-      document.getElementById("telugu-lang-btn").classList.remove("active");
-      document.querySelectorAll('.telugu-text').forEach(el => el.classList.add('hidden'));
-      loadCategories();
-      renderRecords();
+    micBanner.style.display = 'block';
+    try { rec.start(); } catch(e) { /* ignore duplicate starts */ }
+
+    rec.onresult = (ev) => {
+      heard = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim();
     };
-    
-    document.getElementById("telugu-lang-btn").onclick = function() {
-      currentLanguage = "telugu";
-      this.classList.add("active");
-      document.getElementById("english-lang-btn").classList.remove("active");
-      document.querySelectorAll('.telugu-text').forEach(el => el.classList.remove('hidden'));
-      loadCategories();
-      renderRecords();
+    rec.onerror = (e) => {
+      micBanner.style.display = 'none';
+      alert('Mic error: ' + (e.error || 'unknown'));
     };
-
-    // Voice Recognition
-    function startVoiceInput() {
-      if (!('webkitSpeechRecognition' in window)) {
-        alert("Your browser does not support speech recognition.");
+    rec.onend = () => {
+      micBanner.style.display = 'none';
+      if(!heard) return;
+      const {desc, amount} = parseSpoken(heard);
+      if(amount == null || isNaN(amount)){
+        alert('Could not detect amount. Please say: "description amount", e.g., "Milk 50".');
         return;
       }
-      
-      const recognition = new webkitSpeechRecognition();
-      recognition.lang = currentLanguage === "english" ? "en-IN" : "te-IN";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+      saveRecord({
+        date: todayISO(),
+        category,
+        subcategory: subcat,
+        description: desc || '(no description)',
+        amount: Number(amount)
+      });
+      renderTable();
+      renderCategories(); // auto return to categories after save
+    };
+  }
 
-      document.getElementById("status").textContent = currentLanguage === "english" 
-        ? "🎤 Listening... Speak description and amount (e.g., 'Milk 50')" 
-        : "🎤 వినడం... వివరణ మరియు మొత్తాన్ని మాట్లాడండి (ఉదా: 'పాలు 50')";
+  function parseSpoken(s){
+    // Normalize: replace commas with space, collapse spaces
+    const cleaned = s.replace(/[,\u0964\u0965]/g, ' ').replace(/\s+/g,' ').trim();
+    if(!cleaned) return {desc:'', amount:null};
+    const parts = cleaned.split(' ');
+    const last = parts[parts.length-1].replace(/[^\d.\-]/g,''); // keep digits, dot, minus
+    const amount = parseFloat(last);
+    const desc = parts.slice(0, -1).join(' ').trim();
+    return {desc, amount};
+  }
 
-      recognition.start();
+  // ======= Data ops =======
+  function saveRecord(rec){
+    const arr = getData();
+    arr.push(rec);
+    setData(arr);
+  }
+  function deleteRecord(idx){
+    const arr = getData();
+    arr.splice(idx,1);
+    setData(arr);
+    renderTable();
+  }
+  function openEdit(idx){
+    const arr = getData();
+    const r = arr[idx];
+    if(!r) return;
+    editIndex = idx;
+    eDate.value = r.date;
+    eCat.value  = r.category;
+    eSub.value  = r.subcategory;
+    eDesc.value = r.description;
+    eAmt.value  = r.amount;
+    editModal.style.display = 'flex';
+  }
+  function closeEditModal(){ editModal.style.display = 'none'; editIndex = null; }
+  closeEdit.addEventListener('click', closeEditModal);
+  editModal.addEventListener('click', (e)=>{ if(e.target === editModal) closeEditModal(); });
 
-      recognition.onresult = function(event) {
-        const speechResult = event.results[0][0].transcript;
-        document.getElementById("status").textContent = (currentLanguage === "english" ? "Heard: " : "విన్నది: ") + speechResult;
+  saveEdit.addEventListener('click', ()=>{
+    const idx = editIndex;
+    if(idx == null) return;
+    const arr = getData();
+    const r = arr[idx];
+    r.date = eDate.value || r.date;
+    r.description = eDesc.value || '';
+    r.amount = Number(eAmt.value || 0);
+    setData(arr);
+    renderTable();
+    closeEditModal();
+  });
 
-        // Try splitting description and amount
-        let words = speechResult.trim().split(" ");
-        let amount = parseFloat(words.pop()); // last word as amount
-        if (isNaN(amount)) {
-          amount = 0;
-        }
-        let description = words.join(" ");
+  clearAllBtn.addEventListener('click', ()=>{
+    if(confirm('Clear all records?')){ localStorage.removeItem(STORAGE_KEY); renderTable(); }
+  });
 
-        saveRecord(description, amount);
-      };
+  exportBtn.addEventListener('click', ()=>{
+    const data = getData();
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'expenses.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
 
-      recognition.onerror = function(event) {
-        document.getElementById("status").textContent = "Error: " + event.error;
-        loadCategories();
-      };
-
-      recognition.onend = function() {
-        if (document.getElementById("status").textContent.startsWith(currentLanguage === "english" ? "Heard:" : "విన్నది:")) {
-          setTimeout(loadCategories, 1000); // reload category after save
-        }
-      };
+  // ======= Table render + swipe =======
+  function renderTable(){
+    const arr = getData();
+    recBody.innerHTML = '';
+    if(arr.length === 0){
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 5;
+      td.innerHTML = '<div class="empty">No records yet. Add one by selecting a subcategory and speaking “description amount”.</div>';
+      tr.appendChild(td); recBody.appendChild(tr);
+      totalCell.textContent = '₹0';
+      return;
     }
 
-    // Save Data
-    function saveRecord(description, amount) {
-      const date = new Date().toLocaleDateString();
-      const id = Date.now(); // Unique ID for each record
-      const record = { id, date, category: selectedCategory, subcategory: selectedSubcategory, description, amount };
-      let records = JSON.parse(localStorage.getItem("records") || "[]");
-      records.push(record);
-      localStorage.setItem("records", JSON.stringify(records));
-      renderRecords();
-    }
+    let total = 0;
+    arr.forEach((r, idx)=>{
+      total += Number(r.amount||0);
 
-    // Render records with swipe functionality
-    function renderRecords() {
-      let records = JSON.parse(localStorage.getItem("records") || "[]");
-      const container = document.getElementById("records-container");
-      container.innerHTML = "";
-      
-      let total = 0;
-      
-      if (records.length === 0) {
-        container.innerHTML = `<p style="text-align: center; padding: 20px;">${currentLanguage === "english" ? "No records yet" : "ఇంకా రికార్డ్లు లేవు"}</p>`;
-        return;
-      }
-      
-      records.forEach(r => {
-        total += parseFloat(r.amount);
-        
-        const swipeItem = document.createElement("div");
-        swipeItem.className = "swipe-item";
-        swipeItem.setAttribute("data-id", r.id);
-        
-        const swipeContent = document.createElement("div");
-        swipeContent.className = "swipe-content";
-        swipeContent.innerHTML = `
-          <div>
-            <div><strong>${r.date}</strong></div>
-            <div>${r.category} > ${r.subcategory}</div>
-          </div>
-          <div>
-            <div>${r.description}</div>
-            <div><strong>${r.amount}</strong></div>
-          </div>
-        `;
-        
-        const swipeActions = document.createElement("div");
-        swipeActions.className = "swipe-actions";
-        swipeActions.innerHTML = `
-          <div class="swipe-action swipe-edit">
-            <i class="fas fa-edit"></i> ${currentLanguage === "english" ? "Edit" : "సవరించు"}
-          </div>
-          <div class="swipe-action swipe-delete">
-            <i class="fas fa-trash"></i> ${currentLanguage === "english" ? "Delete" : "తొలగించు"}
-          </div>
-        `;
-        
-        swipeItem.appendChild(swipeContent);
-        swipeItem.appendChild(swipeActions);
-        container.appendChild(swipeItem);
-        
-        // Add swipe functionality
-        setupSwipe(swipeItem, r.id);
-      });
-      
-      // Add total row
-      const totalRow = document.createElement("div");
-      totalRow.style.cssText = "display: flex; justify-content: space-between; padding: 15px; background: #34495e; color: white; border-radius: 8px; margin-top: 15px;";
-      totalRow.innerHTML = `
-        <div><strong>${currentLanguage === "english" ? "Total" : "మొత్తం"}</strong></div>
-        <div><strong>${total.toFixed(2)}</strong></div>
-      `;
-      container.appendChild(totalRow);
-    }
+      const tr = document.createElement('tr');
+      tr.dataset.index = idx;
 
-    // Setup swipe functionality
-    function setupSwipe(element, id) {
-      let startX, moveX;
-      const threshold = 100; // Minimum swipe distance
-      
-      element.addEventListener('touchstart', e => {
-        startX = e.touches[0].clientX;
-      });
-      
-      element.addEventListener('touchmove', e => {
-        if (!startX) return;
-        moveX = e.touches[0].clientX;
-        const diff = moveX - startX;
-        
-        // Prevent vertical scrolling when swiping horizontally
-        if (Math.abs(diff) > 10) {
-          e.preventDefault();
-        }
-      });
-      
-      element.addEventListener('touchend', e => {
-        if (!startX) return;
-        const diff = moveX - startX;
-        
-        // Swipe right (edit)
-        if (diff > threshold) {
-          element.classList.add('swipe-right');
-          element.classList.remove('swipe-left');
-          setTimeout(() => editRecord(id), 300);
-        } 
-        // Swipe left (delete)
-        else if (diff < -threshold) {
-          element.classList.add('swipe-left');
-          element.classList.remove('swipe-right');
-          setTimeout(() => deleteRecord(id), 300);
-        }
-        
-        startX = null;
-        moveX = null;
-      });
-      
-      // Also support mouse events for desktop
-      element.addEventListener('mousedown', e => {
-        startX = e.clientX;
-        element.style.cursor = 'grabbing';
-      });
-      
-      element.addEventListener('mousemove', e => {
-        if (!startX) return;
-        moveX = e.clientX;
-      });
-      
-      element.addEventListener('mouseup', e => {
-        if (!startX) return;
-        const diff = moveX - startX;
-        
-        // Swipe right (edit)
-        if (diff > threshold) {
-          element.classList.add('swipe-right');
-          element.classList.remove('swipe-left');
-          setTimeout(() => editRecord(id), 300);
-        } 
-        // Swipe left (delete)
-        else if (diff < -threshold) {
-          element.classList.add('swipe-left');
-          element.classList.remove('swipe-right');
-          setTimeout(() => deleteRecord(id), 300);
-        }
-        
-        startX = null;
-        moveX = null;
-        element.style.cursor = 'grab';
-      });
-      
-      element.addEventListener('mouseleave', e => {
-        startX = null;
-        moveX = null;
-      });
-    }
+      // background swipe layers
+      const leftBg = document.createElement('div');
+      leftBg.className = 'swipe-layer swipe-left';
+      leftBg.innerHTML = '<span style="margin-left:8px">Delete</span><span></span>';
 
-    // Delete record function
-    function deleteRecord(id) {
-      if (confirm(currentLanguage === "english" ? "Delete this record?" : "ఈ రికార్డ్‌ను తొలగించాలా?")) {
-        let records = JSON.parse(localStorage.getItem("records") || "[]");
-        records = records.filter(r => r.id !== id);
-        localStorage.setItem("records", JSON.stringify(records));
-        renderRecords();
-      }
-    }
+      const rightBg = document.createElement('div');
+      rightBg.className = 'swipe-layer swipe-right';
+      rightBg.innerHTML = '<span></span><span style="margin-right:8px">Edit</span>';
 
-    // Edit record function
-    function editRecord(id) {
-      let records = JSON.parse(localStorage.getItem("records") || "[]");
-      const record = records.find(r => r.id === id);
-      
-      if (record) {
-        currentEditId = id;
-        document.getElementById("edit-desc").value = record.description;
-        document.getElementById("edit-amount").value = record.amount;
-        document.getElementById("edit-modal").classList.remove("hidden");
-      }
-    }
+      const row = document.createElement('tr');
+      const rowInner = document.createElement('tr'); // placeholder (not used)
+      // Real row content container:
+      const rowContent = document.createElement('div');
+      rowContent.className = 'row-content';
 
-    // Save edited record
-    document.getElementById("save-edit-btn").onclick = function() {
-      const newDesc = document.getElementById("edit-desc").value;
-      const newAmount = parseFloat(document.getElementById("edit-amount").value);
-      
-      if (!newDesc || isNaN(newAmount)) {
-        alert(currentLanguage === "english" ? "Please enter valid data" : "దయచేసి సరైన డేటాను నమోదు చేయండి");
-        return;
-      }
-      
-      let records = JSON.parse(localStorage.getItem("records") || "[]");
-      const recordIndex = records.findIndex(r => r.id === currentEditId);
-      
-      if (recordIndex !== -1) {
-        records[recordIndex].description = newDesc;
-        records[recordIndex].amount = newAmount;
-        localStorage.setItem("records", JSON.stringify(records));
-        renderRecords();
-      }
-      
-      document.getElementById("edit-modal").classList.add("hidden");
-      currentEditId = null;
+      // Build cells
+      const tds = [
+        r.date,
+        r.category,
+        r.subcategory,
+        r.description,
+        `<div class="right">₹${fmtMoney(r.amount)}</div>`
+      ];
+
+      // We'll create a single row with 5 cells
+      const tr2 = document.createElement('tr'); // visual row
+      tr2.appendChild(tdWithLayers(leftBg, rightBg));
+
+      // Now actual cells:
+      const cells = tds.map(html => {
+        const td = document.createElement('td');
+        td.innerHTML = html;
+        return td;
+      });
+
+      // Put cells in a table row that will be moved during swipe:
+      const trContent = document.createElement('tr'); // not used (we'll move a wrapper)
+      // Instead, we append cells directly to a nested table-less container approach:
+      // Simpler: use a standard row and translate the whole row via transform.
+      // We'll attach swipe handlers to <tr> itself and use a .row-content wrapper inside each <td>.
+      // To keep DOM simple, we’ll just attach to tr and set style.transform on each cell sibling.
+
+      // Rebuild properly:
+      const trReal = document.createElement('tr');
+      trReal.dataset.index = idx;
+
+      // Add swipe layers as separate row overlay using position:absolute on the <tr> container:
+      // We need a wrapper; switch approach: Use a single <tr>, but inside first cell place both layers absolutely positioned covering the row via CSS on <tr>. Easiest is to place them as siblings to a full-width cell container.
+
+      // Simpler solution: Create a container DIV that overlays the row using CSS position:relative on tr is tricky.
+      // We'll implement swipe on <tr> and visually move its cells; the background hint will be simulated by box-shadow + gradient based on direction.
+      // To still show text "Delete/Edit", we add :before content? Not possible inline. Alternate: Add two absolutely-positioned DIVs to recBody just before the row won't bind well.
+
+      // → Revised: We'll create one extra hidden cell that spans all columns and contains the swipe layers; then place the content row on top (position:relative).
+    });
+
+    // Because the above turned complex, rebuild rows cleanly:
+    recBody.innerHTML = '';
+    arr.forEach((r, idx)=>{
+      const tr = document.createElement('tr');
+      tr.dataset.index = idx;
+      tr.style.position = 'relative';
+
+      // swipe background layers
+      const leftBg = document.createElement('div');
+      leftBg.className = 'swipe-layer swipe-left';
+      leftBg.textContent = 'Delete';
+
+      const rightBg = document.createElement('div');
+      rightBg.className = 'swipe-layer swipe-right';
+      rightBg.textContent = 'Edit';
+
+      tr.appendChild(makeCell(r.date));
+      tr.appendChild(makeCell(r.category));
+      tr.appendChild(makeCell(r.subcategory));
+      tr.appendChild(makeCell(r.description));
+      tr.appendChild(makeCell(`<div class="right">₹${fmtMoney(r.amount)}</div>`, true));
+
+      // insert layers visually beneath
+      tr.prepend(leftBg);
+      tr.prepend(rightBg);
+
+      // attach swipe handlers
+      attachSwipe(tr, idx);
+
+      recBody.appendChild(tr);
+    });
+
+    totalCell.textContent = '₹' + fmtMoney(total);
+  }
+
+  function makeCell(html, isHTML=false){
+    const td = document.createElement('td');
+    if(isHTML) td.innerHTML = html; else td.textContent = html;
+    return td;
+  }
+
+  function attachSwipe(tr, idx){
+    let startX = 0, currentX = 0, dragging = false;
+
+    const applyTransform = (dx) => {
+      // translate entire row visually
+      tr.style.transform = `translateX(${dx}px)`;
+      tr.style.transition = 'transform 0s';
+    };
+    const resetTransform = () => {
+      tr.style.transition = 'transform .15s ease';
+      tr.style.transform = 'translateX(0px)';
     };
 
-    // Cancel edit
-    document.getElementById("cancel-edit-btn").onclick = function() {
-      document.getElementById("edit-modal").classList.add("hidden");
-      currentEditId = null;
+    const onStart = (clientX) => { dragging = true; startX = clientX; currentX = clientX; };
+    const onMove  = (clientX) => {
+      if(!dragging) return;
+      const dx = clientX - startX;
+      currentX = clientX;
+      applyTransform(dx);
+    };
+    const onEnd = () => {
+      if(!dragging) return;
+      const dx = currentX - startX;
+      dragging = false;
+      const THRESH = 80; // px
+      if(dx <= -THRESH){
+        // swipe left -> delete
+        if(confirm('Delete this record?')) deleteRecord(idx);
+        else resetTransform();
+      } else if(dx >= THRESH){
+        // swipe right -> edit
+        resetTransform();
+        openEdit(idx);
+      } else {
+        resetTransform();
+      }
     };
 
-    // Start voice input button
-    document.getElementById("start-listening-btn").onclick = startVoiceInput;
+    tr.addEventListener('touchstart', (e)=> onStart(e.touches[0].clientX), {passive:true});
+    tr.addEventListener('touchmove', (e)=> onMove(e.touches[0].clientX), {passive:true});
+    tr.addEventListener('touchend', onEnd);
 
-    // Init load
-    loadCategories();
-    renderRecords();
-  </script>
+    // Also support mouse (desktop)
+    tr.addEventListener('mousedown', (e)=> onStart(e.clientX));
+    window.addEventListener('mousemove', (e)=> dragging && onMove(e.clientX));
+    window.addEventListener('mouseup', onEnd);
+  }
+
+  // ======= Init =======
+  renderCategories();
+  renderTable();
+})();
+</script>
 </body>
 </html>
