@@ -1,179 +1,178 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Smart Expense Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker with Voice</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 15px; text-align: center; }
-    h2 { margin: 10px 0; }
-    select, button { font-size: 18px; padding: 10px; margin: 8px; border-radius: 10px; }
-    #log { margin-top: 20px; font-size: 14px; color: green; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
-    th { background: #eee; }
+    body { font-family: Arial, sans-serif; margin: 15px; background: #f5f5f5; }
+    h2 { text-align: center; }
     .hidden { display: none; }
+    .btn { padding: 15px; margin: 8px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    .category-btn { background: #4CAF50; color: white; width: 100%; }
+    .subcategory-btn { background: #2196F3; color: white; width: 100%; }
+    #status { margin: 10px 0; font-weight: bold; text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: center; }
+    th { background: #333; color: white; }
   </style>
 </head>
 <body>
 
-  <h2>Smart Expense Tracker</h2>
+  <h2>Expense Tracker</h2>
 
-  <!-- Step 1: Account Selection -->
-  <div id="accountDiv">
-    <h3>Select Account</h3>
-    <select id="accountSelect">
-      <option value="Cash">Cash</option>
-      <option value="Bank">Bank</option>
-      <option value="Card">Card</option>
-    </select>
-    <button onclick="setDefaultAccount()">Set Default</button>
-  </div>
-
-  <!-- Step 2: Category -->
-  <div id="categoryDiv" class="hidden">
+  <!-- Category Selection -->
+  <div id="category-section">
     <h3>Select Category</h3>
-    <select id="categorySelect" onchange="showSubcategories()">
-      <option value="">--Select--</option>
-      <option value="Food">Food</option>
-      <option value="Transport">Transport</option>
-      <option value="Shopping">Shopping</option>
-      <option value="Bills">Bills</option>
-    </select>
+    <div id="category-list"></div>
   </div>
 
-  <!-- Step 3: Subcategory -->
-  <div id="subcategoryDiv" class="hidden">
+  <!-- Subcategory Selection -->
+  <div id="subcategory-section" class="hidden">
     <h3>Select Subcategory</h3>
-    <select id="subcategorySelect" onchange="startVoiceInput()"></select>
+    <div id="subcategory-list"></div>
   </div>
 
-  <div id="log"></div>
+  <p id="status"></p>
 
   <!-- Table -->
-  <table id="expenseTable">
+  <h3>Saved Records</h3>
+  <table>
     <thead>
       <tr>
         <th>Date</th>
-        <th>Account</th>
         <th>Category</th>
         <th>Subcategory</th>
         <th>Description</th>
         <th>Amount</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="records"></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4"><strong>Total</strong></td>
+        <td id="total">0</td>
+      </tr>
+    </tfoot>
   </table>
 
-  <script>
-    let recognition;
-    let expenses = [];
+<script>
+  // Categories and Subcategories
+  const categories = {
+    "Food": ["Groceries", "Restaurants", "Snacks"],
+    "Transport": ["Fuel", "Bus", "Taxi"],
+    "Shopping": ["Clothes", "Electronics", "Others"],
+    "Bills": ["Electricity", "Water", "Internet"]
+  };
 
-    // Predefined subcategories
-    const subcategories = {
-      "Food": ["Breakfast", "Lunch", "Dinner", "Snacks"],
-      "Transport": ["Bus", "Train", "Taxi", "Fuel"],
-      "Shopping": ["Clothes", "Groceries", "Electronics"],
-      "Bills": ["Electricity", "Water", "Internet"]
+  let selectedCategory = "";
+  let selectedSubcategory = "";
+
+  // Initialize
+  function loadCategories() {
+    const list = document.getElementById("category-list");
+    list.innerHTML = "";
+    for (let cat in categories) {
+      const btn = document.createElement("button");
+      btn.className = "btn category-btn";
+      btn.textContent = cat;
+      btn.onclick = () => selectCategory(cat);
+      list.appendChild(btn);
+    }
+    document.getElementById("category-section").classList.remove("hidden");
+    document.getElementById("subcategory-section").classList.add("hidden");
+  }
+
+  function selectCategory(cat) {
+    selectedCategory = cat;
+    document.getElementById("category-section").classList.add("hidden");
+    const list = document.getElementById("subcategory-list");
+    list.innerHTML = "";
+    categories[cat].forEach(sub => {
+      const btn = document.createElement("button");
+      btn.className = "btn subcategory-btn";
+      btn.textContent = sub;
+      btn.onclick = () => selectSubcategory(sub);
+      list.appendChild(btn);
+    });
+    document.getElementById("subcategory-section").classList.remove("hidden");
+  }
+
+  function selectSubcategory(sub) {
+    selectedSubcategory = sub;
+    document.getElementById("subcategory-section").classList.add("hidden");
+    startVoiceInput();
+  }
+
+  // Voice Recognition
+  function startVoiceInput() {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert("Your browser does not support speech recognition.");
+      return;
+    }
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-IN"; // you can change to "te-IN" for Telugu
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    document.getElementById("status").textContent = "🎤 Listening... Speak description and amount (e.g., 'Milk 50')";
+
+    recognition.start();
+
+    recognition.onresult = function(event) {
+      const speechResult = event.results[0][0].transcript;
+      document.getElementById("status").textContent = "Heard: " + speechResult;
+
+      // Try splitting description and amount
+      let words = speechResult.trim().split(" ");
+      let amount = parseFloat(words.pop()); // last word as amount
+      if (isNaN(amount)) {
+        amount = 0;
+      }
+      let description = words.join(" ");
+
+      saveRecord(description, amount);
     };
 
-    // Load default account on page load
-    window.onload = function() {
-      const defaultAcc = localStorage.getItem("defaultAccount");
-      if (defaultAcc) {
-        document.getElementById("accountSelect").value = defaultAcc;
-        document.getElementById("accountDiv").classList.add("hidden");
-        document.getElementById("categoryDiv").classList.remove("hidden");
-      }
+    recognition.onerror = function(event) {
+      document.getElementById("status").textContent = "Error: " + event.error;
+      loadCategories();
     };
 
-    function setDefaultAccount() {
-      const acc = document.getElementById("accountSelect").value;
-      localStorage.setItem("defaultAccount", acc);
-      document.getElementById("accountDiv").classList.add("hidden");
-      document.getElementById("categoryDiv").classList.remove("hidden");
-    }
-
-    function showSubcategories() {
-      const cat = document.getElementById("categorySelect").value;
-      const subSelect = document.getElementById("subcategorySelect");
-      subSelect.innerHTML = "";
-      if (cat && subcategories[cat]) {
-        subcategories[cat].forEach(sc => {
-          const opt = document.createElement("option");
-          opt.value = sc; opt.textContent = sc;
-          subSelect.appendChild(opt);
-        });
-        document.getElementById("subcategoryDiv").classList.remove("hidden");
-      } else {
-        document.getElementById("subcategoryDiv").classList.add("hidden");
+    recognition.onend = function() {
+      if (document.getElementById("status").textContent.startsWith("Heard:")) {
+        setTimeout(loadCategories, 1000); // reload category after save
       }
-    }
+    };
+  }
 
-    // Start voice input after subcategory select
-    function startVoiceInput() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Voice recognition not supported in this browser.");
-        return;
-      }
-      recognition = new SpeechRecognition();
-      recognition.lang = "en-IN"; // Change if you want Telugu: "te-IN"
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+  // Save Data
+  function saveRecord(description, amount) {
+    const date = new Date().toLocaleDateString();
+    const record = { date, category: selectedCategory, subcategory: selectedSubcategory, description, amount };
+    let records = JSON.parse(localStorage.getItem("records") || "[]");
+    records.push(record);
+    localStorage.setItem("records", JSON.stringify(records));
+    renderRecords();
+  }
 
-      recognition.start();
-      document.getElementById("log").textContent = "🎤 Speak description and amount...";
+  function renderRecords() {
+    let records = JSON.parse(localStorage.getItem("records") || "[]");
+    const tbody = document.getElementById("records");
+    tbody.innerHTML = "";
+    let total = 0;
+    records.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${r.date}</td><td>${r.category}</td><td>${r.subcategory}</td><td>${r.description}</td><td>${r.amount}</td>`;
+      tbody.appendChild(tr);
+      total += parseFloat(r.amount);
+    });
+    document.getElementById("total").textContent = total;
+  }
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        processVoiceInput(transcript);
-      };
+  // Init load
+  loadCategories();
+  renderRecords();
+</script>
 
-      recognition.onerror = (event) => {
-        document.getElementById("log").textContent = "Error: " + event.error;
-      };
-
-      recognition.onend = () => {
-        document.getElementById("log").textContent += " (Stopped)";
-      };
-    }
-
-    // Extract description & amount
-    function processVoiceInput(transcript) {
-      let amountMatch = transcript.match(/(\d+(\.\d+)?)/);
-      let amount = amountMatch ? amountMatch[0] : "0";
-      let description = transcript.replace(amount, "").trim();
-
-      const acc = localStorage.getItem("defaultAccount");
-      const cat = document.getElementById("categorySelect").value;
-      const subcat = document.getElementById("subcategorySelect").value;
-
-      const date = new Date().toLocaleDateString();
-
-      expenses.push({date, acc, cat, subcat, description, amount});
-      updateTable();
-
-      // Reset flow: show category again
-      document.getElementById("subcategoryDiv").classList.add("hidden");
-      document.getElementById("categorySelect").value = "";
-    }
-
-    function updateTable() {
-      const tbody = document.querySelector("#expenseTable tbody");
-      tbody.innerHTML = "";
-      expenses.forEach(exp => {
-        const row = `<tr>
-          <td>${exp.date}</td>
-          <td>${exp.acc}</td>
-          <td>${exp.cat}</td>
-          <td>${exp.subcat}</td>
-          <td>${exp.description}</td>
-          <td>${exp.amount}</td>
-        </tr>`;
-        tbody.innerHTML += row;
-      });
-    }
-  </script>
 </body>
 </html>
