@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker with Voice</title>
+  <style>
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0; 
+      padding: 20px; 
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: #333;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    h2 { 
+      text-align: center; 
+      color: #2c3e50;
+      margin-bottom: 25px;
+      font-size: 28px;
+    }
+    .hidden { 
+      display: none; 
+    }
+    .btn { 
+      padding: 12px 18px; 
+      margin: 8px; 
+      border: none; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 16px; 
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    .category-btn { 
+      background: #4CAF50; 
+      color: white; 
+      width: 100%; 
+    }
+    .subcategory-btn { 
+      background: #2196F3; 
+      color: white; 
+      width: 100%; 
+    }
+    .action-btn { 
+      background: #FF9800; 
+      color: white; 
+      padding: 12px 20px;
+      font-weight: bold;
+    }
+    .mode-btn {
+      background: #9C27B0;
+      color: white;
+      padding: 12px 20px;
+      font-weight: bold;
+    }
+    .mode-btn.active {
+      background: #7B1FA2;
+      box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.3);
+    }
+    #status { 
+      margin: 15px 0; 
+      font-weight: bold; 
+      text-align: center; 
+      padding: 10px;
+      border-radius: 6px;
+      background: #e3f2fd;
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 25px; 
+      background: white; 
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    th, td { 
+      padding: 12px; 
+      border: 1px solid #ddd; 
+      text-align: center; 
+    }
+    th { 
+      background: #34495e; 
+      color: white; 
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    tr:hover {
+      background-color: #f1f8ff;
+    }
+    .current-selection { 
+      background: #e1f5fe; 
+      padding: 15px; 
+      border-radius: 8px; 
+      margin: 15px 0; 
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .list-controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .mode-selection {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .mode-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+    .auto-selection {
+      background: #E8F5E9;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .auto-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 15px 0;
+    }
+    select {
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      min-width: 150px;
+    }
+    .auto-item {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 10px 0;
+      padding: 12px;
+      background: #F1F8E9;
+      border-radius: 6px;
+    }
+    .auto-item input {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      flex-grow: 1;
+    }
+    .section-title {
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 8px;
+      margin-top: 25px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Expense Tracker</h2>
+
+    <!-- Mode Selection -->
+    <div class="mode-selection">
+      <div class="mode-title">Select Input Mode</div>
+      <button id="single-mode-btn" class="btn mode-btn active">Single Item Mode</button>
+      <button id="multiple-mode-btn" class="btn mode-btn">Multiple Items Mode</button>
+      <button id="auto-mode-btn" class="btn mode-btn">Auto-Select Mode</button>
+    </div>
+
+    <!-- Current Selection Display -->
+    <div id="current-selection" class="current-selection hidden">
+      <h3>Adding items to: <span id="selected-category-display"></span> > <span id="selected-subcategory-display"></span></h3>
+    </div>
+
+    <!-- Category Selection -->
+    <div id="category-section">
+      <h3 class="section-title">Select Category</h3>
+      <div id="category-list"></div>
+    </div>
+
+    <!-- Subcategory Selection -->
+    <div id="subcategory-section" class="hidden">
+      <h3 class="section-title">Select Subcategory</h3>
+      <div id="subcategory-list"></div>
+      <div class="list-controls">
+        <button id="start-listening-btn" class="btn action-btn">Start Voice Input</button>
+      </div>
+    </div>
+
+    <!-- List Entry Mode -->
+    <div id="list-mode-section" class="hidden">
+      <h3 class="section-title">Add Items to Your List</h3>
+      <div id="list-status">No items added yet. Speak to add your first item.</div>
+      <div class="list-controls">
+        <button id="start-listening-list-btn" class="btn action-btn">Start Listening</button>
+        <button id="finish-list-btn" class="btn action-btn">Finish & Save All</button>
+        <button id="cancel-list-btn" class="btn action-btn">Cancel</button>
+      </div>
+      <ul id="items-list"></ul>
+    </div>
+
+    <!-- Auto Selection Mode -->
+    <div id="auto-mode-section" class="hidden">
+      <div class="auto-selection">
+        <h3 class="section-title">Auto-Select Mode</h3>
+        <p>Select category and subcategory, then add items with descriptions and amounts.</p>
+        
+        <div class="auto-controls">
+          <select id="auto-category-select">
+            <option value="">Select Category</option>
+          </select>
+          
+          <select id="auto-subcategory-select">
+            <option value="">Select Subcategory</option>
+          </select>
+        </div>
+        
+        <div id="auto-items-container">
+          <div class="auto-item">
+            <input type="text" placeholder="Item description" class="auto-desc">
+            <input type="number" placeholder="Amount" min="0" step="0.01" class="auto-amount">
+            <button class="btn action-btn add-item-btn">Add Item</button>
+          </div>
+        </div>
+        
+        <div class="list-controls">
+          <button id="add-more-items" class="btn action-btn">Add More Items</button>
+          <button id="save-auto-items" class="btn action-btn">Save All Items</button>
+        </div>
+      </div>
+    </div>
+
+    <p id="status"></p>
+
+    <!-- Table -->
+    <h3 class="section-title">Saved Records</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Subcategory</th>
+          <th>Description</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody id="records"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4"><strong>Total</strong></td>
+          <td id="total">0</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <script>
+    // Categories and Subcategories
+    const categories = {
+      "Food": ["Groceries", "Restaurants", "Snacks"],
+      "Transport": ["Fuel", "Bus", "Taxi"],
+      "Shopping": ["Clothes", "Electronics", "Others"],
+      "Bills": ["Electricity", "Water", "Internet"]
+    };
+
+    let selectedCategory = "";
+    let selectedSubcategory = "";
+    let isListMode = false;
+    let isAutoMode = false;
+    let currentItems = [];
+
+    // Initialize
+    function loadCategories() {
+      const list = document.getElementById("category-list");
+      list.innerHTML = "";
+      for (let cat in categories) {
+        const btn = document.createElement("button");
+        btn.className = "btn category-btn";
+        btn.textContent = cat;
+        btn.onclick = () => selectCategory(cat);
+        list.appendChild(btn);
+      }
+      
+      // Also populate the auto-mode dropdown
+      const autoCategorySelect = document.getElementById("auto-category-select");
+      autoCategorySelect.innerHTML = '<option value="">Select Category</option>';
+      for (let cat in categories) {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        autoCategorySelect.appendChild(option);
+      }
+      
+      document.getElementById("category-section").classList.remove("hidden");
+      document.getElementById("subcategory-section").classList.add("hidden");
+      document.getElementById("list-mode-section").classList.add("hidden");
+      document.getElementById("auto-mode-section").classList.add("hidden");
+      document.getElementById("current-selection").classList.add("hidden");
+      
+      // Reset states
+      isListMode = false;
+      isAutoMode = false;
+      currentItems = [];
+    }
+
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      document.getElementById("category-section").classList.add("hidden");
+      const list = document.getElementById("subcategory-list");
+      list.innerHTML = "";
+      categories[cat].forEach(sub => {
+        const btn = document.createElement("button");
+        btn.className = "btn subcategory-btn";
+        btn.textContent = sub;
+        btn.onclick = () => selectSubcategory(sub);
+        list.appendChild(btn);
+      });
+      document.getElementById("subcategory-section").classList.remove("hidden");
+      
+      // Update current selection display
+      document.getElementById("selected-category-display").textContent = selectedCategory;
+      document.getElementById("current-selection").classList.remove("hidden");
+    }
+
+    function selectSubcategory(sub) {
+      selectedSubcategory = sub;
+      
+      // Update current selection display
+      document.getElementById("selected-subcategory-display").textContent = selectedSubcategory;
+      
+      if (isListMode) {
+        // If in list mode, show the list interface
+        document.getElementById("subcategory-section").classList.add("hidden");
+        document.getElementById("list-mode-section").classList.remove("hidden");
+        document.getElementById("items-list").innerHTML = "";
+        document.getElementById("list-status").textContent = "No items added yet. Click 'Start Listening' to add your first item.";
+        currentItems = [];
+      } else if (isAutoMode) {
+        // If in auto mode, populate the auto selectors
+        document.getElementById("auto-category-select").value = selectedCategory;
+        document.getElementById("auto-subcategory-select").value = selectedSubcategory;
+      } else {
+        // Default single item mode - start voice input
+        startVoiceInput();
+      }
+    }
+
+    // Set mode handlers
+    document.getElementById("single-mode-btn").onclick = () => {
+      setMode("single");
+      loadCategories();
+    };
+    
+    document.getElementById("multiple-mode-btn").onclick = () => {
+      setMode("multiple");
+      loadCategories();
+    };
+    
+    document.getElementById("auto-mode-btn").onclick = () => {
+      setMode("auto");
+      loadCategories();
+    };
+
+    function setMode(mode) {
+      // Update UI to show active mode
+      document.getElementById("single-mode-btn").classList.remove("active");
+      document.getElementById("multiple-mode-btn").classList.remove("active");
+      document.getElementById("auto-mode-btn").classList.remove("active");
+      
+      isListMode = false;
+      isAutoMode = false;
+      
+      if (mode === "single") {
+        document.getElementById("single-mode-btn").classList.add("active");
+      } else if (mode === "multiple") {
+        document.getElementById("multiple-mode-btn").classList.add("active");
+        isListMode = true;
+      } else if (mode === "auto") {
+        document.getElementById("auto-mode-btn").classList.add("active");
+        isAutoMode = true;
+        document.getElementById("category-section").classList.add("hidden");
+        document.getElementById("subcategory-section").classList.add("hidden");
+        document.getElementById("auto-mode-section").classList.remove("hidden");
+        
+        // Update current selection display
+        document.getElementById("selected-category-display").textContent = "Auto-Select Mode";
+        document.getElementById("selected-subcategory-display").textContent = "Manual Entry";
+        document.getElementById("current-selection").classList.remove("hidden");
+      }
+    }
+
+    // Auto mode category selection handler
+    document.getElementById("auto-category-select").onchange = function() {
+      const category = this.value;
+      const subcategorySelect = document.getElementById("auto-subcategory-select");
+      
+      // Clear and populate subcategories
+      subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+      if (category && categories[category]) {
+        categories[category].forEach(sub => {
+          const option = document.createElement("option");
+          option.value = sub;
+          option.textContent = sub;
+          subcategorySelect.appendChild(option);
+        });
+      }
+      
+      selectedCategory = category;
+      document.getElementById("selected-category-display").textContent = category || "Not selected";
+    };
+
+    // Auto mode subcategory selection handler
+    document.getElementById("auto-subcategory-select").onchange = function() {
+      selectedSubcategory = this.value;
+      document.getElementById("selected-subcategory-display").textContent = selectedSubcategory || "Not selected";
+    };
+
+    // Add more items in auto mode
+    document.getElementById("add-more-items").onclick = function() {
+      const newItem = document.createElement("div");
+      newItem.className = "auto-item";
+      newItem.innerHTML = `
+        <input type="text" placeholder="Item description" class="auto-desc">
+        <input type="number" placeholder="Amount" min="0" step="0.01" class="auto-amount">
+        <button class="btn action-btn remove-item-btn">Remove</button>
+      `;
+      document.getElementById("auto-items-container").appendChild(newItem);
+      
+      // Add event listener to the remove button
+      newItem.querySelector(".remove-item-btn").onclick = function() {
+        newItem.remove();
+      };
+    };
+
+    // Save items in auto mode
+    document.getElementById("save-auto-items").onclick = function() {
+      if (!selectedCategory || !selectedSubcategory) {
+        alert("Please select both category and subcategory");
+        return;
+      }
+      
+      const items = [];
+      const itemElements = document.querySelectorAll(".auto-item");
+      
+      itemElements.forEach(itemEl => {
+        const desc = itemEl.querySelector(".auto-desc").value.trim();
+        const amount = parseFloat(itemEl.querySelector(".auto-amount").value);
+        
+        if (desc && !isNaN(amount) && amount > 0) {
+          items.push({ description: desc, amount: amount });
+        }
+      });
+      
+      if (items.length === 0) {
+        alert("Please add at least one valid item");
+        return;
+      }
+      
+      // Save all items
+      const date = new Date().toLocaleDateString();
+      let records = JSON.parse(localStorage.getItem("records") || "[]");
+      
+      items.forEach(item => {
+        const record = { 
+          date, 
+          category: selectedCategory, 
+          subcategory: selectedSubcategory, 
+          description: item.description, 
+          amount: item.amount 
+        };
+        records.push(record);
+      });
+      
+      localStorage.setItem("records", JSON.stringify(records));
+      renderRecords();
+      
+      // Show success message and reset
+      alert(`Successfully saved ${items.length} items!`);
+      
+      // Reset the form
+      document.querySelectorAll(".auto-item:not(:first-child)").forEach(el => el.remove());
+      document.querySelectorAll(".auto-desc").forEach(el => el.value = "");
+      document.querySelectorAll(".auto-amount").forEach(el => el.value = "");
+    };
+
+    // List mode functions
+    function startListListening() {
+      if (!('webkitSpeechRecognition' in window)) {
+        alert("Your browser does not support speech recognition.");
+        return;
+      }
+      
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-IN";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      document.getElementById("list-status").textContent = "🎤 Listening... Speak description and amount (e.g., 'Milk 50')";
+
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        const speechResult = event.results[0][0].transcript;
+        document.getElementById("list-status").textContent = "Heard: " + speechResult;
+
+        // Try splitting description and amount
+        let words = speechResult.trim().split(" ");
+        let amount = parseFloat(words.pop()); // last word as amount
+        if (isNaN(amount)) {
+          amount = 0;
+        }
+        let description = words.join(" ");
+
+        // Add to current items list
+        addToList(description, amount);
+      };
+
+      recognition.onerror = function(event) {
+        document.getElementById("list-status").textContent = "Error: " + event.error;
+      };
+
+      recognition.onend = function() {
+        // In list mode, we don't automatically go back to categories
+        document.getElementById("list-status").textContent = "Ready to listen again. Click 'Start Listening' to add another item.";
+      };
+    }
+
+    function addToList(description, amount) {
+      if (!description || amount <= 0) {
+        document.getElementById("list-status").textContent = "Invalid entry. Please try again.";
+        return;
+      }
+      
+      currentItems.push({description, amount});
+      
+      // Update the UI
+      const listElement = document.getElementById("items-list");
+      const listItem = document.createElement("li");
+      listItem.textContent = `${description} - $${amount.toFixed(2)}`;
+      listElement.appendChild(listItem);
+      
+      document.getElementById("list-status").textContent = `Added: ${description} - $${amount.toFixed(2)}. ${currentItems.length} items in list.`;
+    }
+
+    function saveList() {
+      if (currentItems.length === 0) {
+        alert("No items to save!");
+        return;
+      }
+      
+      const date = new Date().toLocaleDateString();
+      let records = JSON.parse(localStorage.getItem("records") || "[]");
+      
+      currentItems.forEach(item => {
+        const record = { 
+          date, 
+          category: selectedCategory, 
+          subcategory: selectedSubcategory, 
+          description: item.description, 
+          amount: item.amount 
+        };
+        records.push(record);
+      });
+      
+      localStorage.setItem("records", JSON.stringify(records));
+      renderRecords();
+      
+      // Show success message
+      document.getElementById("list-status").textContent = `Successfully saved ${currentItems.length} items!`;
+      
+      // Return to category selection after a delay
+      setTimeout(loadCategories, 1500);
+    }
+
+    function cancelList() {
+      if (confirm("Cancel adding multiple items? Any unsaved items will be lost.")) {
+        loadCategories();
+      }
+    }
+
+    // Voice Recognition for single item
+    function startVoiceInput() {
+      if (!('webkitSpeechRecognition' in window)) {
+        alert("Your browser does not support speech recognition.");
+        return;
+      }
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-IN"; // you can change to "te-IN" for Telugu
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      document.getElementById("status").textContent = "🎤 Listening... Speak description and amount (e.g., 'Milk 50')";
+
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        const speechResult = event.results[0][0].transcript;
+        document.getElementById("status").textContent = "Heard: " + speechResult;
+
+        // Try splitting description and amount
+        let words = speechResult.trim().split(" ");
+        let amount = parseFloat(words.pop()); // last word as amount
+        if (isNaN(amount)) {
+          amount = 0;
+        }
+        let description = words.join(" ");
+
+        saveRecord(description, amount);
+      };
+
+      recognition.onerror = function(event) {
+        document.getElementById("status").textContent = "Error: " + event.error;
+        loadCategories();
+      };
+
+      recognition.onend = function() {
+        if (document.getElementById("status").textContent.startsWith("Heard:")) {
+          setTimeout(loadCategories, 1000); // reload category after save
+        }
+      };
+    }
+
+    // Save Data
+    function saveRecord(description, amount) {
+      const date = new Date().toLocaleDateString();
+      const record = { date, category: selectedCategory, subcategory: selectedSubcategory, description, amount };
+      let records = JSON.parse(localStorage.getItem("records") || "[]");
+      records.push(record);
+      localStorage.setItem("records", JSON.stringify(records));
+      renderRecords();
+    }
+
+    function renderRecords() {
+      let records = JSON.parse(localStorage.getItem("records") || "[]");
+      const tbody = document.getElementById("records");
+      tbody.innerHTML = "";
+      let total = 0;
+      records.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.date}</td><td>${r.category}</td><td>${r.subcategory}</td><td>${r.description}</td><td>${r.amount}</td>`;
+        tbody.appendChild(tr);
+        total += parseFloat(r.amount);
+      });
+      document.getElementById("total").textContent = total.toFixed(2);
+    }
+
+    // Setup event listeners for list mode
+    document.getElementById("start-listening-btn").onclick = startVoiceInput;
+    document.getElementById("start-listening-list-btn").onclick = startListListening;
+    document.getElementById("finish-list-btn").onclick = saveList;
+    document.getElementById("cancel-list-btn").onclick = cancelList;
+
+    // Add event listener to the first remove button in auto mode
+    document.querySelector(".remove-item-btn").onclick = function() {
+      if (document.querySelectorAll(".auto-item").length > 1) {
+        this.parentElement.remove();
+      }
+    };
+
+    // Init load
+    loadCategories();
+    renderRecords();
+  </script>
+</body>
+</html>
