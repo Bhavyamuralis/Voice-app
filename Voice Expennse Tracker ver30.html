@@ -3,15 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Expense Tracker with Voice</title>
+  <title>Expense Tracker with Telugu Support</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
       margin: 0; 
       padding: 20px; 
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       color: #333;
+      min-height: 100vh;
     }
+    
     .container {
       max-width: 1000px;
       margin: 0 auto;
@@ -20,15 +29,18 @@
       border-radius: 12px;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
+    
     h2 { 
       text-align: center; 
       color: #2c3e50;
       margin-bottom: 25px;
       font-size: 28px;
     }
+    
     .hidden { 
       display: none; 
     }
+    
     .btn { 
       padding: 12px 18px; 
       margin: 8px; 
@@ -39,36 +51,62 @@
       transition: all 0.3s ease;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
+    
     .btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
+    
     .category-btn { 
       background: #4CAF50; 
       color: white; 
       width: 100%; 
     }
+    
     .subcategory-btn { 
-      background: #2196F3; 
-      color: white; 
-      width: 100%; 
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: left;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 12px;
+      color: white;
+      width: 100%;
+      transition: all 0.3s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
+    
+    .subcategory-btn i {
+      margin-right: 15px;
+      font-size: 24px;
+      width: 30px;
+    }
+    
+    .food { background: linear-gradient(to right, #FF416C, #FF4B2B); }
+    .transport { background: linear-gradient(to right, #36D1DC, #5B86E5); }
+    .shopping { background: linear-gradient(to right, #f46b45, #eea849); }
+    .bills { background: linear-gradient(to right, #0ba360, #3cba92); }
+    
     .action-btn { 
       background: #FF9800; 
       color: white; 
       padding: 12px 20px;
       font-weight: bold;
     }
+    
     .mode-btn {
       background: #9C27B0;
       color: white;
       padding: 12px 20px;
       font-weight: bold;
     }
+    
     .mode-btn.active {
       background: #7B1FA2;
       box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.3);
     }
+    
     #status { 
       margin: 15px 0; 
       font-weight: bold; 
@@ -77,6 +115,7 @@
       border-radius: 6px;
       background: #e3f2fd;
     }
+    
     table { 
       width: 100%; 
       border-collapse: collapse; 
@@ -84,22 +123,27 @@
       background: white; 
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+    
     th, td { 
       padding: 12px; 
       border: 1px solid #ddd; 
       text-align: center; 
     }
+    
     th { 
       background: #34495e; 
       color: white; 
       font-weight: 600;
     }
+    
     tr:nth-child(even) {
       background-color: #f9f9f9;
     }
+    
     tr:hover {
       background-color: #f1f8ff;
     }
+    
     .current-selection { 
       background: #e1f5fe; 
       padding: 15px; 
@@ -109,506 +153,340 @@
       font-size: 18px;
       font-weight: 500;
     }
+    
     .list-controls {
       display: flex;
       justify-content: center;
       gap: 12px;
       margin: 20px 0;
     }
+    
     .mode-selection {
       text-align: center;
       margin: 20px 0;
     }
+    
     .mode-title {
       font-size: 18px;
       font-weight: 600;
       margin-bottom: 12px;
       color: #2c3e50;
     }
-    .auto-selection {
-      background: #E8F5E9;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-    }
-    .auto-controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
+    
+    .language-selection {
+      text-align: center;
       margin: 15px 0;
     }
-    select {
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-      font-size: 16px;
-      min-width: 150px;
+    
+    .lang-btn {
+      background: #607D8B;
+      color: white;
+      padding: 10px 15px;
+      margin: 0 5px;
     }
-    .auto-item {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin: 10px 0;
-      padding: 12px;
-      background: #F1F8E9;
-      border-radius: 6px;
+    
+    .lang-btn.active {
+      background: #455A64;
+      box-shadow: 0 0 0 2px rgba(96, 125, 139, 0.4);
     }
-    .auto-item input {
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-      flex-grow: 1;
-    }
+    
     .section-title {
       color: #2c3e50;
       border-bottom: 2px solid #3498db;
       padding-bottom: 8px;
       margin-top: 25px;
     }
+    
+    /* Swipeable item styles */
+    .swipe-item {
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    
+    .swipe-content {
+      padding: 15px;
+      background: white;
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .swipe-actions {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: flex;
+      border-radius: 8px;
+    }
+    
+    .swipe-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: white;
+      font-weight: bold;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    
+    .swipe-delete {
+      background: #FF5252;
+      justify-content: flex-end;
+      padding-right: 20px;
+    }
+    
+    .swipe-edit {
+      background: #FF9800;
+      justify-content: flex-start;
+      padding-left: 20px;
+    }
+    
+    /* Telugu font */
+    @font-face {
+      font-family: 'Telugu';
+      src: local('Nirmala UI'), local('Gautami');
+      unicode-range: U+0C00-0C7F;
+    }
+    
+    .telugu-text {
+      font-family: 'Telugu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 18px;
+    }
+    
+    /* Animation for swipe */
+    .swipe-item.swipe-left .swipe-delete {
+      transform: translateX(0);
+    }
+    
+    .swipe-item.swipe-right .swipe-edit {
+      transform: translateX(0);
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      
+      .btn {
+        padding: 10px 15px;
+        font-size: 14px;
+      }
+      
+      .list-controls {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Expense Tracker</h2>
+    <h2>Expense Tracker <span class="telugu-text">- ఖర్చు ట్రాకర్</span></h2>
 
-    <!-- Mode Selection -->
-    <div class="mode-selection">
-      <div class="mode-title">Select Input Mode</div>
-      <button id="single-mode-btn" class="btn mode-btn active">Single Item Mode</button>
-      <button id="multiple-mode-btn" class="btn mode-btn">Multiple Items Mode</button>
-      <button id="auto-mode-btn" class="btn mode-btn">Auto-Select Mode</button>
+    <!-- Language Selection -->
+    <div class="language-selection">
+      <div class="mode-title">Select Language / భాషను ఎంచుకోండి</div>
+      <button id="english-lang-btn" class="btn lang-btn active">English</button>
+      <button id="telugu-lang-btn" class="btn lang-btn">తెలుగు</button>
     </div>
 
     <!-- Current Selection Display -->
     <div id="current-selection" class="current-selection hidden">
       <h3>Adding items to: <span id="selected-category-display"></span> > <span id="selected-subcategory-display"></span></h3>
+      <h3 class="telugu-text hidden">అంశాలను జోడిస్తుంది: <span id="selected-category-display-telugu"></span> > <span id="selected-subcategory-display-telugu"></span></h3>
     </div>
 
     <!-- Category Selection -->
     <div id="category-section">
-      <h3 class="section-title">Select Category</h3>
+      <h3 class="section-title">Select Category / <span class="telugu-text">కేటగరీని ఎంచుకోండి</span></h3>
       <div id="category-list"></div>
     </div>
 
     <!-- Subcategory Selection -->
     <div id="subcategory-section" class="hidden">
-      <h3 class="section-title">Select Subcategory</h3>
+      <h3 class="section-title">Select Subcategory / <span class="telugu-text">ఉపకేటగరీని ఎంచుకోండి</span></h3>
       <div id="subcategory-list"></div>
       <div class="list-controls">
-        <button id="start-listening-btn" class="btn action-btn">Start Voice Input</button>
-      </div>
-    </div>
-
-    <!-- List Entry Mode -->
-    <div id="list-mode-section" class="hidden">
-      <h3 class="section-title">Add Items to Your List</h3>
-      <div id="list-status">No items added yet. Speak to add your first item.</div>
-      <div class="list-controls">
-        <button id="start-listening-list-btn" class="btn action-btn">Start Listening</button>
-        <button id="finish-list-btn" class="btn action-btn">Finish & Save All</button>
-        <button id="cancel-list-btn" class="btn action-btn">Cancel</button>
-      </div>
-      <ul id="items-list"></ul>
-    </div>
-
-    <!-- Auto Selection Mode -->
-    <div id="auto-mode-section" class="hidden">
-      <div class="auto-selection">
-        <h3 class="section-title">Auto-Select Mode</h3>
-        <p>Select category and subcategory, then add items with descriptions and amounts.</p>
-        
-        <div class="auto-controls">
-          <select id="auto-category-select">
-            <option value="">Select Category</option>
-          </select>
-          
-          <select id="auto-subcategory-select">
-            <option value="">Select Subcategory</option>
-          </select>
-        </div>
-        
-        <div id="auto-items-container">
-          <div class="auto-item">
-            <input type="text" placeholder="Item description" class="auto-desc">
-            <input type="number" placeholder="Amount" min="0" step="0.01" class="auto-amount">
-            <button class="btn action-btn add-item-btn">Add Item</button>
-          </div>
-        </div>
-        
-        <div class="list-controls">
-          <button id="add-more-items" class="btn action-btn">Add More Items</button>
-          <button id="save-auto-items" class="btn action-btn">Save All Items</button>
-        </div>
+        <button id="start-listening-btn" class="btn action-btn">Start Voice Input / <span class="telugu-text">వాయిస్ ఇన్పుట్ ప్రారంభించండి</span></button>
       </div>
     </div>
 
     <p id="status"></p>
 
     <!-- Table -->
-    <h3 class="section-title">Saved Records</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Category</th>
-          <th>Subcategory</th>
-          <th>Description</th>
-          <th>Amount</th>
-        </tr>
-      </thead>
-      <tbody id="records"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="4"><strong>Total</strong></td>
-          <td id="total">0</td>
-        </tr>
-      </tfoot>
-    </table>
+    <h3 class="section-title">Saved Records / <span class="telugu-text">సేవ్ చేయబడిన రికార్డులు</span></h3>
+    <div id="records-container">
+      <!-- Records will be displayed here with swipe functionality -->
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+      <div style="background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px;">
+        <h3>Edit Record / <span class="telugu-text">రికార్డ్ సవరించండి</span></h3>
+        <div style="margin: 15px 0;">
+          <input type="text" id="edit-desc" placeholder="Description / వివరణ" style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd;">
+          <input type="number" id="edit-amount" placeholder="Amount / మొత్తం" min="0" step="0.01" style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd;">
+        </div>
+        <div class="list-controls">
+          <button id="save-edit-btn" class="btn action-btn">Save Changes / <span class="telugu-text">మార్పులను సేవ్ చేయండి</span></button>
+          <button id="cancel-edit-btn" class="btn action-btn">Cancel / <span class="telugu-text">రద్దు చేయండి</span></button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    // Categories and Subcategories
+    // Categories and Subcategories with Telugu translations
     const categories = {
-      "Food": ["Groceries", "Restaurants", "Snacks"],
-      "Transport": ["Fuel", "Bus", "Taxi"],
-      "Shopping": ["Clothes", "Electronics", "Others"],
-      "Bills": ["Electricity", "Water", "Internet"]
+      "Food": { 
+        subcategories: ["Groceries", "Restaurants", "Snacks"],
+        telugu: "ఆహారం",
+        subcategoriesTelugu: ["కిరాణా సామగ్రి", "రెస్టారెంట్లు", "స్నాక్స్"],
+        icon: "fa-utensils",
+        color: "food"
+      },
+      "Transport": { 
+        subcategories: ["Fuel", "Bus", "Taxi"],
+        telugu: "రవాణా",
+        subcategoriesTelugu: "ఇంధనం", "బస్సు", "టాక్సీ"],
+        icon: "fa-car",
+        color: "transport"
+      },
+      "Shopping": { 
+        subcategories: ["Clothes", "Electronics", "Others"],
+        telugu: "షాపింగ్",
+        subcategoriesTelugu: ["బట్టలు", "ఎలక్ట్రానిక్స్", "ఇతరులు"],
+        icon: "fa-shopping-bag",
+        color: "shopping"
+      },
+      "Bills": { 
+        subcategories: ["Electricity", "Water", "Internet"],
+        telugu: "బిల్లులు",
+        subcategoriesTelugu: ["విద్యుత్తు", "నీరు", "ఇంటర్నెట్"],
+        icon: "fa-file-invoice-dollar",
+        color: "bills"
+      }
     };
 
     let selectedCategory = "";
     let selectedSubcategory = "";
-    let isListMode = false;
-    let isAutoMode = false;
-    let currentItems = [];
+    let currentLanguage = "english";
+    let currentEditId = null;
 
     // Initialize
     function loadCategories() {
       const list = document.getElementById("category-list");
       list.innerHTML = "";
+      
       for (let cat in categories) {
         const btn = document.createElement("button");
         btn.className = "btn category-btn";
-        btn.textContent = cat;
+        btn.innerHTML = currentLanguage === "english" ? cat : `${cat} <span class="telugu-text">(${categories[cat].telugu})</span>`;
         btn.onclick = () => selectCategory(cat);
         list.appendChild(btn);
       }
       
-      // Also populate the auto-mode dropdown
-      const autoCategorySelect = document.getElementById("auto-category-select");
-      autoCategorySelect.innerHTML = '<option value="">Select Category</option>';
-      for (let cat in categories) {
-        const option = document.createElement("option");
-        option.value = cat;
-        option.textContent = cat;
-        autoCategorySelect.appendChild(option);
-      }
-      
       document.getElementById("category-section").classList.remove("hidden");
       document.getElementById("subcategory-section").classList.add("hidden");
-      document.getElementById("list-mode-section").classList.add("hidden");
-      document.getElementById("auto-mode-section").classList.add("hidden");
       document.getElementById("current-selection").classList.add("hidden");
-      
-      // Reset states
-      isListMode = false;
-      isAutoMode = false;
-      currentItems = [];
     }
 
     function selectCategory(cat) {
       selectedCategory = cat;
       document.getElementById("category-section").classList.add("hidden");
+      
       const list = document.getElementById("subcategory-list");
       list.innerHTML = "";
-      categories[cat].forEach(sub => {
+      
+      categories[cat].subcategories.forEach((sub, index) => {
         const btn = document.createElement("button");
-        btn.className = "btn subcategory-btn";
-        btn.textContent = sub;
-        btn.onclick = () => selectSubcategory(sub);
+        btn.className = `btn subcategory-btn ${categories[cat].color}`;
+        
+        const iconElement = document.createElement("i");
+        iconElement.className = `fas ${categories[cat].icon}`;
+        btn.appendChild(iconElement);
+        
+        const textElement = document.createElement("span");
+        textElement.innerHTML = currentLanguage === "english" ? sub : `${sub} <span class="telugu-text">(${categories[cat].subcategoriesTelugu[index]})</span>`;
+        btn.appendChild(textElement);
+        
+        btn.onclick = () => selectSubcategory(sub, index);
         list.appendChild(btn);
       });
+      
       document.getElementById("subcategory-section").classList.remove("hidden");
       
       // Update current selection display
       document.getElementById("selected-category-display").textContent = selectedCategory;
+      document.getElementById("selected-category-display-telugu").textContent = categories[cat].telugu;
       document.getElementById("current-selection").classList.remove("hidden");
+      
+      if (currentLanguage === "telugu") {
+        document.querySelectorAll('.telugu-text').forEach(el => el.classList.remove('hidden'));
+      }
     }
 
-    function selectSubcategory(sub) {
+    function selectSubcategory(sub, index) {
       selectedSubcategory = sub;
       
       // Update current selection display
       document.getElementById("selected-subcategory-display").textContent = selectedSubcategory;
+      document.getElementById("selected-subcategory-display-telugu").textContent = 
+        categories[selectedCategory].subcategoriesTelugu[index];
       
-      if (isListMode) {
-        // If in list mode, show the list interface
-        document.getElementById("subcategory-section").classList.add("hidden");
-        document.getElementById("list-mode-section").classList.remove("hidden");
-        document.getElementById("items-list").innerHTML = "";
-        document.getElementById("list-status").textContent = "No items added yet. Click 'Start Listening' to add your first item.";
-        currentItems = [];
-      } else if (isAutoMode) {
-        // If in auto mode, populate the auto selectors
-        document.getElementById("auto-category-select").value = selectedCategory;
-        document.getElementById("auto-subcategory-select").value = selectedSubcategory;
-      } else {
-        // Default single item mode - start voice input
-        startVoiceInput();
-      }
+      // Start voice input
+      startVoiceInput();
     }
 
-    // Set mode handlers
-    document.getElementById("single-mode-btn").onclick = () => {
-      setMode("single");
+    // Language selection
+    document.getElementById("english-lang-btn").onclick = function() {
+      currentLanguage = "english";
+      this.classList.add("active");
+      document.getElementById("telugu-lang-btn").classList.remove("active");
+      document.querySelectorAll('.telugu-text').forEach(el => el.classList.add('hidden'));
       loadCategories();
+      renderRecords();
     };
     
-    document.getElementById("multiple-mode-btn").onclick = () => {
-      setMode("multiple");
+    document.getElementById("telugu-lang-btn").onclick = function() {
+      currentLanguage = "telugu";
+      this.classList.add("active");
+      document.getElementById("english-lang-btn").classList.remove("active");
+      document.querySelectorAll('.telugu-text').forEach(el => el.classList.remove('hidden'));
       loadCategories();
-    };
-    
-    document.getElementById("auto-mode-btn").onclick = () => {
-      setMode("auto");
-      loadCategories();
-    };
-
-    function setMode(mode) {
-      // Update UI to show active mode
-      document.getElementById("single-mode-btn").classList.remove("active");
-      document.getElementById("multiple-mode-btn").classList.remove("active");
-      document.getElementById("auto-mode-btn").classList.remove("active");
-      
-      isListMode = false;
-      isAutoMode = false;
-      
-      if (mode === "single") {
-        document.getElementById("single-mode-btn").classList.add("active");
-      } else if (mode === "multiple") {
-        document.getElementById("multiple-mode-btn").classList.add("active");
-        isListMode = true;
-      } else if (mode === "auto") {
-        document.getElementById("auto-mode-btn").classList.add("active");
-        isAutoMode = true;
-        document.getElementById("category-section").classList.add("hidden");
-        document.getElementById("subcategory-section").classList.add("hidden");
-        document.getElementById("auto-mode-section").classList.remove("hidden");
-        
-        // Update current selection display
-        document.getElementById("selected-category-display").textContent = "Auto-Select Mode";
-        document.getElementById("selected-subcategory-display").textContent = "Manual Entry";
-        document.getElementById("current-selection").classList.remove("hidden");
-      }
-    }
-
-    // Auto mode category selection handler
-    document.getElementById("auto-category-select").onchange = function() {
-      const category = this.value;
-      const subcategorySelect = document.getElementById("auto-subcategory-select");
-      
-      // Clear and populate subcategories
-      subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
-      if (category && categories[category]) {
-        categories[category].forEach(sub => {
-          const option = document.createElement("option");
-          option.value = sub;
-          option.textContent = sub;
-          subcategorySelect.appendChild(option);
-        });
-      }
-      
-      selectedCategory = category;
-      document.getElementById("selected-category-display").textContent = category || "Not selected";
-    };
-
-    // Auto mode subcategory selection handler
-    document.getElementById("auto-subcategory-select").onchange = function() {
-      selectedSubcategory = this.value;
-      document.getElementById("selected-subcategory-display").textContent = selectedSubcategory || "Not selected";
-    };
-
-    // Add more items in auto mode
-    document.getElementById("add-more-items").onclick = function() {
-      const newItem = document.createElement("div");
-      newItem.className = "auto-item";
-      newItem.innerHTML = `
-        <input type="text" placeholder="Item description" class="auto-desc">
-        <input type="number" placeholder="Amount" min="0" step="0.01" class="auto-amount">
-        <button class="btn action-btn remove-item-btn">Remove</button>
-      `;
-      document.getElementById("auto-items-container").appendChild(newItem);
-      
-      // Add event listener to the remove button
-      newItem.querySelector(".remove-item-btn").onclick = function() {
-        newItem.remove();
-      };
-    };
-
-    // Save items in auto mode
-    document.getElementById("save-auto-items").onclick = function() {
-      if (!selectedCategory || !selectedSubcategory) {
-        alert("Please select both category and subcategory");
-        return;
-      }
-      
-      const items = [];
-      const itemElements = document.querySelectorAll(".auto-item");
-      
-      itemElements.forEach(itemEl => {
-        const desc = itemEl.querySelector(".auto-desc").value.trim();
-        const amount = parseFloat(itemEl.querySelector(".auto-amount").value);
-        
-        if (desc && !isNaN(amount) && amount > 0) {
-          items.push({ description: desc, amount: amount });
-        }
-      });
-      
-      if (items.length === 0) {
-        alert("Please add at least one valid item");
-        return;
-      }
-      
-      // Save all items
-      const date = new Date().toLocaleDateString();
-      let records = JSON.parse(localStorage.getItem("records") || "[]");
-      
-      items.forEach(item => {
-        const record = { 
-          date, 
-          category: selectedCategory, 
-          subcategory: selectedSubcategory, 
-          description: item.description, 
-          amount: item.amount 
-        };
-        records.push(record);
-      });
-      
-      localStorage.setItem("records", JSON.stringify(records));
       renderRecords();
-      
-      // Show success message and reset
-      alert(`Successfully saved ${items.length} items!`);
-      
-      // Reset the form
-      document.querySelectorAll(".auto-item:not(:first-child)").forEach(el => el.remove());
-      document.querySelectorAll(".auto-desc").forEach(el => el.value = "");
-      document.querySelectorAll(".auto-amount").forEach(el => el.value = "");
     };
 
-    // List mode functions
-    function startListListening() {
-      if (!('webkitSpeechRecognition' in window)) {
-        alert("Your browser does not support speech recognition.");
-        return;
-      }
-      
-      const recognition = new webkitSpeechRecognition();
-      recognition.lang = "en-IN";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      document.getElementById("list-status").textContent = "🎤 Listening... Speak description and amount (e.g., 'Milk 50')";
-
-      recognition.start();
-
-      recognition.onresult = function(event) {
-        const speechResult = event.results[0][0].transcript;
-        document.getElementById("list-status").textContent = "Heard: " + speechResult;
-
-        // Try splitting description and amount
-        let words = speechResult.trim().split(" ");
-        let amount = parseFloat(words.pop()); // last word as amount
-        if (isNaN(amount)) {
-          amount = 0;
-        }
-        let description = words.join(" ");
-
-        // Add to current items list
-        addToList(description, amount);
-      };
-
-      recognition.onerror = function(event) {
-        document.getElementById("list-status").textContent = "Error: " + event.error;
-      };
-
-      recognition.onend = function() {
-        // In list mode, we don't automatically go back to categories
-        document.getElementById("list-status").textContent = "Ready to listen again. Click 'Start Listening' to add another item.";
-      };
-    }
-
-    function addToList(description, amount) {
-      if (!description || amount <= 0) {
-        document.getElementById("list-status").textContent = "Invalid entry. Please try again.";
-        return;
-      }
-      
-      currentItems.push({description, amount});
-      
-      // Update the UI
-      const listElement = document.getElementById("items-list");
-      const listItem = document.createElement("li");
-      listItem.textContent = `${description} - $${amount.toFixed(2)}`;
-      listElement.appendChild(listItem);
-      
-      document.getElementById("list-status").textContent = `Added: ${description} - $${amount.toFixed(2)}. ${currentItems.length} items in list.`;
-    }
-
-    function saveList() {
-      if (currentItems.length === 0) {
-        alert("No items to save!");
-        return;
-      }
-      
-      const date = new Date().toLocaleDateString();
-      let records = JSON.parse(localStorage.getItem("records") || "[]");
-      
-      currentItems.forEach(item => {
-        const record = { 
-          date, 
-          category: selectedCategory, 
-          subcategory: selectedSubcategory, 
-          description: item.description, 
-          amount: item.amount 
-        };
-        records.push(record);
-      });
-      
-      localStorage.setItem("records", JSON.stringify(records));
-      renderRecords();
-      
-      // Show success message
-      document.getElementById("list-status").textContent = `Successfully saved ${currentItems.length} items!`;
-      
-      // Return to category selection after a delay
-      setTimeout(loadCategories, 1500);
-    }
-
-    function cancelList() {
-      if (confirm("Cancel adding multiple items? Any unsaved items will be lost.")) {
-        loadCategories();
-      }
-    }
-
-    // Voice Recognition for single item
+    // Voice Recognition
     function startVoiceInput() {
       if (!('webkitSpeechRecognition' in window)) {
         alert("Your browser does not support speech recognition.");
         return;
       }
+      
       const recognition = new webkitSpeechRecognition();
-      recognition.lang = "en-IN"; // you can change to "te-IN" for Telugu
+      recognition.lang = currentLanguage === "english" ? "en-IN" : "te-IN";
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
 
-      document.getElementById("status").textContent = "🎤 Listening... Speak description and amount (e.g., 'Milk 50')";
+      document.getElementById("status").textContent = currentLanguage === "english" 
+        ? "🎤 Listening... Speak description and amount (e.g., 'Milk 50')" 
+        : "🎤 వినడం... వివరణ మరియు మొత్తాన్ని మాట్లాడండి (ఉదా: 'పాలు 50')";
 
       recognition.start();
 
       recognition.onresult = function(event) {
         const speechResult = event.results[0][0].transcript;
-        document.getElementById("status").textContent = "Heard: " + speechResult;
+        document.getElementById("status").textContent = (currentLanguage === "english" ? "Heard: " : "విన్నది: ") + speechResult;
 
         // Try splitting description and amount
         let words = speechResult.trim().split(" ");
@@ -627,7 +505,7 @@
       };
 
       recognition.onend = function() {
-        if (document.getElementById("status").textContent.startsWith("Heard:")) {
+        if (document.getElementById("status").textContent.startsWith(currentLanguage === "english" ? "Heard:" : "విన్నది:")) {
           setTimeout(loadCategories, 1000); // reload category after save
         }
       };
@@ -636,39 +514,211 @@
     // Save Data
     function saveRecord(description, amount) {
       const date = new Date().toLocaleDateString();
-      const record = { date, category: selectedCategory, subcategory: selectedSubcategory, description, amount };
+      const id = Date.now(); // Unique ID for each record
+      const record = { id, date, category: selectedCategory, subcategory: selectedSubcategory, description, amount };
       let records = JSON.parse(localStorage.getItem("records") || "[]");
       records.push(record);
       localStorage.setItem("records", JSON.stringify(records));
       renderRecords();
     }
 
+    // Render records with swipe functionality
     function renderRecords() {
       let records = JSON.parse(localStorage.getItem("records") || "[]");
-      const tbody = document.getElementById("records");
-      tbody.innerHTML = "";
+      const container = document.getElementById("records-container");
+      container.innerHTML = "";
+      
       let total = 0;
+      
+      if (records.length === 0) {
+        container.innerHTML = `<p style="text-align: center; padding: 20px;">${currentLanguage === "english" ? "No records yet" : "ఇంకా రికార్డ్లు లేవు"}</p>`;
+        return;
+      }
+      
       records.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${r.date}</td><td>${r.category}</td><td>${r.subcategory}</td><td>${r.description}</td><td>${r.amount}</td>`;
-        tbody.appendChild(tr);
         total += parseFloat(r.amount);
+        
+        const swipeItem = document.createElement("div");
+        swipeItem.className = "swipe-item";
+        swipeItem.setAttribute("data-id", r.id);
+        
+        const swipeContent = document.createElement("div");
+        swipeContent.className = "swipe-content";
+        swipeContent.innerHTML = `
+          <div>
+            <div><strong>${r.date}</strong></div>
+            <div>${r.category} > ${r.subcategory}</div>
+          </div>
+          <div>
+            <div>${r.description}</div>
+            <div><strong>${r.amount}</strong></div>
+          </div>
+        `;
+        
+        const swipeActions = document.createElement("div");
+        swipeActions.className = "swipe-actions";
+        swipeActions.innerHTML = `
+          <div class="swipe-action swipe-edit">
+            <i class="fas fa-edit"></i> ${currentLanguage === "english" ? "Edit" : "సవరించు"}
+          </div>
+          <div class="swipe-action swipe-delete">
+            <i class="fas fa-trash"></i> ${currentLanguage === "english" ? "Delete" : "తొలగించు"}
+          </div>
+        `;
+        
+        swipeItem.appendChild(swipeContent);
+        swipeItem.appendChild(swipeActions);
+        container.appendChild(swipeItem);
+        
+        // Add swipe functionality
+        setupSwipe(swipeItem, r.id);
       });
-      document.getElementById("total").textContent = total.toFixed(2);
+      
+      // Add total row
+      const totalRow = document.createElement("div");
+      totalRow.style.cssText = "display: flex; justify-content: space-between; padding: 15px; background: #34495e; color: white; border-radius: 8px; margin-top: 15px;";
+      totalRow.innerHTML = `
+        <div><strong>${currentLanguage === "english" ? "Total" : "మొత్తం"}</strong></div>
+        <div><strong>${total.toFixed(2)}</strong></div>
+      `;
+      container.appendChild(totalRow);
     }
 
-    // Setup event listeners for list mode
-    document.getElementById("start-listening-btn").onclick = startVoiceInput;
-    document.getElementById("start-listening-list-btn").onclick = startListListening;
-    document.getElementById("finish-list-btn").onclick = saveList;
-    document.getElementById("cancel-list-btn").onclick = cancelList;
+    // Setup swipe functionality
+    function setupSwipe(element, id) {
+      let startX, moveX;
+      const threshold = 100; // Minimum swipe distance
+      
+      element.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX;
+      });
+      
+      element.addEventListener('touchmove', e => {
+        if (!startX) return;
+        moveX = e.touches[0].clientX;
+        const diff = moveX - startX;
+        
+        // Prevent vertical scrolling when swiping horizontally
+        if (Math.abs(diff) > 10) {
+          e.preventDefault();
+        }
+      });
+      
+      element.addEventListener('touchend', e => {
+        if (!startX) return;
+        const diff = moveX - startX;
+        
+        // Swipe right (edit)
+        if (diff > threshold) {
+          element.classList.add('swipe-right');
+          element.classList.remove('swipe-left');
+          setTimeout(() => editRecord(id), 300);
+        } 
+        // Swipe left (delete)
+        else if (diff < -threshold) {
+          element.classList.add('swipe-left');
+          element.classList.remove('swipe-right');
+          setTimeout(() => deleteRecord(id), 300);
+        }
+        
+        startX = null;
+        moveX = null;
+      });
+      
+      // Also support mouse events for desktop
+      element.addEventListener('mousedown', e => {
+        startX = e.clientX;
+        element.style.cursor = 'grabbing';
+      });
+      
+      element.addEventListener('mousemove', e => {
+        if (!startX) return;
+        moveX = e.clientX;
+      });
+      
+      element.addEventListener('mouseup', e => {
+        if (!startX) return;
+        const diff = moveX - startX;
+        
+        // Swipe right (edit)
+        if (diff > threshold) {
+          element.classList.add('swipe-right');
+          element.classList.remove('swipe-left');
+          setTimeout(() => editRecord(id), 300);
+        } 
+        // Swipe left (delete)
+        else if (diff < -threshold) {
+          element.classList.add('swipe-left');
+          element.classList.remove('swipe-right');
+          setTimeout(() => deleteRecord(id), 300);
+        }
+        
+        startX = null;
+        moveX = null;
+        element.style.cursor = 'grab';
+      });
+      
+      element.addEventListener('mouseleave', e => {
+        startX = null;
+        moveX = null;
+      });
+    }
 
-    // Add event listener to the first remove button in auto mode
-    document.querySelector(".remove-item-btn").onclick = function() {
-      if (document.querySelectorAll(".auto-item").length > 1) {
-        this.parentElement.remove();
+    // Delete record function
+    function deleteRecord(id) {
+      if (confirm(currentLanguage === "english" ? "Delete this record?" : "ఈ రికార్డ్‌ను తొలగించాలా?")) {
+        let records = JSON.parse(localStorage.getItem("records") || "[]");
+        records = records.filter(r => r.id !== id);
+        localStorage.setItem("records", JSON.stringify(records));
+        renderRecords();
       }
+    }
+
+    // Edit record function
+    function editRecord(id) {
+      let records = JSON.parse(localStorage.getItem("records") || "[]");
+      const record = records.find(r => r.id === id);
+      
+      if (record) {
+        currentEditId = id;
+        document.getElementById("edit-desc").value = record.description;
+        document.getElementById("edit-amount").value = record.amount;
+        document.getElementById("edit-modal").classList.remove("hidden");
+      }
+    }
+
+    // Save edited record
+    document.getElementById("save-edit-btn").onclick = function() {
+      const newDesc = document.getElementById("edit-desc").value;
+      const newAmount = parseFloat(document.getElementById("edit-amount").value);
+      
+      if (!newDesc || isNaN(newAmount)) {
+        alert(currentLanguage === "english" ? "Please enter valid data" : "దయచేసి సరైన డేటాను నమోదు చేయండి");
+        return;
+      }
+      
+      let records = JSON.parse(localStorage.getItem("records") || "[]");
+      const recordIndex = records.findIndex(r => r.id === currentEditId);
+      
+      if (recordIndex !== -1) {
+        records[recordIndex].description = newDesc;
+        records[recordIndex].amount = newAmount;
+        localStorage.setItem("records", JSON.stringify(records));
+        renderRecords();
+      }
+      
+      document.getElementById("edit-modal").classList.add("hidden");
+      currentEditId = null;
     };
+
+    // Cancel edit
+    document.getElementById("cancel-edit-btn").onclick = function() {
+      document.getElementById("edit-modal").classList.add("hidden");
+      currentEditId = null;
+    };
+
+    // Start voice input button
+    document.getElementById("start-listening-btn").onclick = startVoiceInput;
 
     // Init load
     loadCategories();
