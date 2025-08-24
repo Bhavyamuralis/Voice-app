@@ -95,18 +95,6 @@
       font-weight: bold;
     }
     
-    .mode-btn {
-      background: #9C27B0;
-      color: white;
-      padding: 12px 20px;
-      font-weight: bold;
-    }
-    
-    .mode-btn.active {
-      background: #7B1FA2;
-      box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.3);
-    }
-    
     #status { 
       margin: 15px 0; 
       font-weight: bold; 
@@ -159,18 +147,6 @@
       justify-content: center;
       gap: 12px;
       margin: 20px 0;
-    }
-    
-    .mode-selection {
-      text-align: center;
-      margin: 20px 0;
-    }
-    
-    .mode-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      color: #2c3e50;
     }
     
     .language-selection {
@@ -294,7 +270,7 @@
 
     <!-- Language Selection -->
     <div class="language-selection">
-      <div class="mode-title">Select Language / భాషను ఎంచుకోండి</div>
+      <div class="section-title">Select Language / భాషను ఎంచుకోండి</div>
       <button id="english-lang-btn" class="btn lang-btn active">English</button>
       <button id="telugu-lang-btn" class="btn lang-btn">తెలుగు</button>
     </div>
@@ -357,7 +333,7 @@
       "Transport": { 
         subcategories: ["Fuel", "Bus", "Taxi"],
         telugu: "రవాణా",
-        subcategoriesTelugu: "ఇంధనం", "బస్సు", "టాక్సీ"],
+        subcategoriesTelugu: ["ఇంధనం", "బస్సు", "టాక్సీ"],
         icon: "fa-car",
         color: "transport"
       },
