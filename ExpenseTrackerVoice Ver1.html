@@ -207,29 +207,50 @@
     color: var(--info);
   }
 
-  /* Expense Table */
+  /* Expense Table - FIXED EQUAL COLUMNS */
   .expense-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed; /* Ensures equal column width */
   }
 
   .expense-table th {
     text-align: left;
-    padding: 12px 0;
+    padding: 12px 8px;
     color: var(--text-secondary);
     font-weight: 600;
     border-bottom: 1px solid var(--light-gray);
   }
 
   .expense-table td {
-    padding: 16px 0;
+    padding: 16px 8px;
     border-bottom: 1px solid var(--light-gray);
     vertical-align: top;
     line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .expense-table tr:last-child td {
     border-bottom: none;
+  }
+
+  /* Set equal width for all columns */
+  .expense-table th:nth-child(1),
+  .expense-table td:nth-child(1) {
+    width: 30%;
+  }
+
+  .expense-table th:nth-child(2),
+  .expense-table td:nth-child(2) {
+    width: 45%;
+  }
+
+  .expense-table th:nth-child(3),
+  .expense-table td:nth-child(3) {
+    width: 25%;
+    text-align: right;
   }
 
   .expense-subcategory {
@@ -244,7 +265,6 @@
   .expense-amount {
     font-weight: 700;
     color: var(--primary);
-    text-align: right;
   }
 
   /* Swipe Container */
@@ -443,7 +463,23 @@
     }
     
     .expense-table td {
-      padding: 12px 0;
+      padding: 12px 6px;
+    }
+
+    /* Adjust column widths for mobile */
+    .expense-table th:nth-child(1),
+    .expense-table td:nth-child(1) {
+      width: 28%;
+    }
+
+    .expense-table th:nth-child(2),
+    .expense-table td:nth-child(2) {
+      width: 42%;
+    }
+
+    .expense-table th:nth-child(3),
+    .expense-table td:nth-child(3) {
+      width: 30%;
     }
   }
 
