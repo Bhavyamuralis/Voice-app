@@ -520,6 +520,7 @@
   .expense-item {
     position: relative;
     transition: transform 0.3s ease;
+    cursor: pointer;
   }
 
   .expense-item.swiped {
@@ -568,6 +569,26 @@
 
   .action-delete {
     background: var(--danger);
+  }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    z-index: 1000;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
   }
 </style>
 </head>
@@ -669,6 +690,7 @@ let stayOn = false;
 let speechRecognition = null;
 let recognitionTimeout = null;
 let collapsedDates = {}; // Track which dates are collapsed
+let activeSwipeItem = null; // Track which item is currently swiped
 
 // DOM Elements
 const stayToggle = document.getElementById("stayToggle");
@@ -702,6 +724,14 @@ function initApp() {
   
   // Show category view by default
   showView('categoryView');
+  
+  // Add click listener to close swiped items when clicking elsewhere
+  document.addEventListener('click', (e) => {
+    if (activeSwipeItem && !e.target.closest('.expense-item')) {
+      activeSwipeItem.classList.remove('swiped');
+      activeSwipeItem = null;
+    }
+  });
 }
 
 // Toggle stay mode
@@ -1105,40 +1135,109 @@ function loadRecords() {
       categoryRecords.forEach(record => {
         categoryTotal += record.amount;
         
-        // Create table row
+        // Create expense item container
+        const itemContainer = document.createElement('div');
+        itemContainer.className = 'expense-item';
+        itemContainer.setAttribute('data-id', record.id);
+        
+        // Create expense content
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'expense-content';
+        contentDiv.innerHTML = `
+          <div style="flex: 1;">
+            <div class="expense-subcategory">${record.subcategory}</div>
+            <div class="expense-description">${record.description}</div>
+          </div>
+          <div class="expense-amount">₹${record.amount.toFixed(2)}</div>
+        `;
+        
+        // Create action buttons
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'expense-actions';
+        actionsDiv.innerHTML = `
+          <button class="action-btn action-edit" onclick="event.stopPropagation(); editRecordById('${record.id}')">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteRecordById('${record.id}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        `;
+        
+        // Add click event to show actions
+        contentDiv.addEventListener('click', (e) => {
+          e.stopPropagation();
+          
+          // Close any previously swiped item
+          if (activeSwipeItem && activeSwipeItem !== itemContainer) {
+            activeSwipeItem.classList.remove('swiped');
+          }
+          
+          // Toggle current item
+          itemContainer.classList.toggle('swiped');
+          
+          // Update active item
+          if (itemContainer.classList.contains('swiped')) {
+            activeSwipeItem = itemContainer;
+          } else {
+            activeSwipeItem = null;
+          }
+        });
+        
+        // Add touch events for mobile swipe
+        let startX, currentX, diffX;
+        
+        contentDiv.addEventListener('touchstart', (e) => {
+          startX = e.touches[0].clientX;
+        });
+        
+        contentDiv.addEventListener('touchmove', (e) => {
+          if (!startX) return;
+          
+          currentX = e.touches[0].clientX;
+          diffX = currentX - startX;
+          
+          // Only allow left swipe
+          if (diffX < 0) {
+            e.preventDefault();
+            itemContainer.style.transform = `translateX(${Math.max(diffX, -80)}px)`;
+          }
+        });
+        
+        contentDiv.addEventListener('touchend', () => {
+          if (!startX) return;
+          
+          // If swiped more than 40px, toggle swiped state
+          if (diffX < -40) {
+            // Close any previously swiped item
+            if (activeSwipeItem && activeSwipeItem !== itemContainer) {
+              activeSwipeItem.classList.remove('swiped');
+            }
+            
+            itemContainer.classList.add('swiped');
+            activeSwipeItem = itemContainer;
+          } else {
+            itemContainer.classList.remove('swiped');
+            if (activeSwipeItem === itemContainer) {
+              activeSwipeItem = null;
+            }
+          }
+          
+          itemContainer.style.transform = '';
+          startX = null;
+        });
+        
+        // Add to container
+        itemContainer.appendChild(contentDiv);
+        itemContainer.appendChild(actionsDiv);
+        
+        // Create table row for the item
         const row = document.createElement('tr');
-        row.innerHTML = `
-          <td class="expense-subcategory">${record.subcategory}</td>
-          <td class="expense-description">${record.description}</td>
-          <td class="expense-amount">₹${record.amount.toFixed(2)}</td>
-        `;
-        
-        // Add action buttons
-        const actionCell = document.createElement('td');
-        actionCell.colSpan = 3;
-        actionCell.style.padding = '8px 0 0 0';
-        actionCell.style.borderBottom = 'none';
-        
-        const actionDiv = document.createElement('div');
-        actionDiv.className = 'swipe-actions';
-        actionDiv.innerHTML = `
-          <button class="swipe-btn edit" onclick="editRecordById('${record.id}')">
-            <i class="fas fa-edit"></i> Edit
-          </button>
-          <button class="swipe-btn delete" onclick="deleteRecordById('${record.id}')">
-            <i class="fas fa-trash"></i> Delete
-          </button>
-        `;
-        
-        actionCell.appendChild(actionDiv);
-        
-        // Create action row
-        const actionRow = document.createElement('tr');
-        actionRow.className = 'action-row';
-        actionRow.appendChild(actionCell);
-        
+        const cell = document.createElement('td');
+        cell.colSpan = 3;
+        cell.style.padding = '0';
+        cell.appendChild(itemContainer);
+        row.appendChild(cell);
         tbody.appendChild(row);
-        tbody.appendChild(actionRow);
       });
       
       table.appendChild(tbody);
@@ -1151,51 +1250,6 @@ function loadRecords() {
   }
   
   totalDisplay.textContent = `Total: ₹${grandTotal.toFixed(2)}`;
-  
-  // Initialize swipe functionality
-  initSwipeListeners();
-}
-
-// Initialize swipe functionality for expense items
-function initSwipeListeners() {
-  const expenseItems = document.querySelectorAll('.expense-item');
-  
-  expenseItems.forEach(item => {
-    let startX, currentX, diffX;
-    let isSwiped = false;
-    
-    item.addEventListener('touchstart', (e) => {
-      startX = e.touches[0].clientX;
-      isSwiped = item.classList.contains('swiped');
-    });
-    
-    item.addEventListener('touchmove', (e) => {
-      if (!startX) return;
-      
-      currentX = e.touches[0].clientX;
-      diffX = currentX - startX;
-      
-      // Only allow left swipe
-      if (diffX < 0) {
-        e.preventDefault();
-        item.style.transform = `translateX(${Math.max(diffX, -80)}px)`;
-      }
-    });
-    
-    item.addEventListener('touchend', () => {
-      if (!startX) return;
-      
-      // If swiped more than 40px, toggle swiped state
-      if (diffX < -40) {
-        item.classList.add('swiped');
-      } else {
-        item.classList.remove('swiped');
-      }
-      
-      item.style.transform = '';
-      startX = null;
-    });
-  });
 }
 
 // Edit record by ID
@@ -1219,6 +1273,12 @@ function editRecordById(id) {
     localStorage.setItem("expenses", JSON.stringify(records));
     loadRecords();
     showToast("Record updated");
+    
+    // Close the swipe actions
+    if (activeSwipeItem) {
+      activeSwipeItem.classList.remove('swiped');
+      activeSwipeItem = null;
+    }
   } else {
     showToast("Invalid amount");
   }
@@ -1239,6 +1299,12 @@ function deleteRecordById(id) {
     localStorage.setItem("expenses", JSON.stringify(records));
     loadRecords();
     showToast("Record deleted");
+    
+    // Close the swipe actions
+    if (activeSwipeItem) {
+      activeSwipeItem.classList.remove('swiped');
+      activeSwipeItem = null;
+    }
   }
 }
 
