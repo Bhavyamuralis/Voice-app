@@ -526,12 +526,8 @@
     background: white;
   }
 
-  .expense-item.swiped-left {
+  .expense-item.swiped {
     transform: translateX(-80px);
-  }
-
-  .expense-item.swiped-right {
-    transform: translateX(80px);
   }
 
   .expense-content {
@@ -548,8 +544,7 @@
     flex: 1;
   }
 
-  /* Left actions (edit) */
-  .expense-actions-left {
+  .expense-actions {
     position: absolute;
     right: -80px;
     top: 0;
@@ -559,23 +554,8 @@
     transition: right 0.3s ease;
   }
 
-  .expense-item.swiped-left .expense-actions-left {
+  .expense-item.swiped .expense-actions {
     right: 0;
-  }
-
-  /* Right actions (delete) */
-  .expense-actions-right {
-    position: absolute;
-    left: -80px;
-    top: 0;
-    width: 80px;
-    height: 100%;
-    display: flex;
-    transition: left 0.3s ease;
-  }
-
-  .expense-item.swiped-right .expense-actions-right {
-    left: 0;
   }
 
   .action-btn {
@@ -754,8 +734,7 @@ function initApp() {
   // Add click listener to close swiped items when clicking elsewhere
   document.addEventListener('click', (e) => {
     if (activeSwipeItem && !e.target.closest('.expense-item')) {
-      activeSwipeItem.classList.remove('swiped-left');
-      activeSwipeItem.classList.remove('swiped-right');
+      activeSwipeItem.classList.remove('swiped');
       activeSwipeItem = null;
     }
   });
@@ -1130,10 +1109,7 @@ function loadRecords() {
       // Table header
       const thead = document.createElement('thead');
       thead.innerHTML = `
-        <tr>
-          <th>Details</th>
-          <th>Amount</th>
-        </tr>
+        
       `;
       table.appendChild(thead);
       
@@ -1154,25 +1130,19 @@ function loadRecords() {
         contentDiv.className = 'expense-content';
         contentDiv.innerHTML = `
           <div class="expense-info">
-            <div class="expense-subcategory">${record.subcategory}</div>
             <div class="expense-description">${record.description}</div>
+            <div class="expense-subcategory">${record.subcategory}</div>
           </div>
           <div class="expense-amount">₹${record.amount.toFixed(2)}</div>
         `;
         
-        // Create action buttons for left swipe (edit)
-        const actionsLeftDiv = document.createElement('div');
-        actionsLeftDiv.className = 'expense-actions-left';
-        actionsLeftDiv.innerHTML = `
+        // Create action buttons
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'expense-actions';
+        actionsDiv.innerHTML = `
           <button class="action-btn action-edit" onclick="event.stopPropagation(); editRecordById('${record.id}')">
             <i class="fas fa-edit"></i>
           </button>
-        `;
-        
-        // Create action buttons for right swipe (delete)
-        const actionsRightDiv = document.createElement('div');
-        actionsRightDiv.className = 'expense-actions-right';
-        actionsRightDiv.innerHTML = `
           <button class="action-btn action-delete" onclick="event.stopPropagation(); deleteRecordById('${record.id}')">
             <i class="fas fa-trash"></i>
           </button>
@@ -1180,92 +1150,79 @@ function loadRecords() {
         
         // Add click event to show actions
         contentDiv.addEventListener('click', (e) => {
-          // If we're clicking on an action button, don't toggle
-          if (e.target.closest('.action-btn')) return;
+          e.stopPropagation();
           
-          // Toggle swiped state
+          // Close any previously swiped item
           if (activeSwipeItem && activeSwipeItem !== itemContainer) {
-            activeSwipeItem.classList.remove('swiped-left');
-            activeSwipeItem.classList.remove('swiped-right');
+            activeSwipeItem.classList.remove('swiped');
           }
           
-          if (itemContainer.classList.contains('swiped-left') || itemContainer.classList.contains('swiped-right')) {
-            itemContainer.classList.remove('swiped-left');
-            itemContainer.classList.remove('swiped-right');
-            activeSwipeItem = null;
-          } else {
-            // Default to left swipe (edit) on click
-            itemContainer.classList.add('swiped-left');
+          // Toggle current item
+          itemContainer.classList.toggle('swiped');
+          
+          // Update active item
+          if (itemContainer.classList.contains('swiped')) {
             activeSwipeItem = itemContainer;
+          } else {
+            activeSwipeItem = null;
           }
         });
         
-        // Add touch events for swiping
-        let startX = 0;
-        let currentX = 0;
-        let isSwiping = false;
+        // Add touch events for mobile swipe
+        let startX, currentX, diffX;
         
         contentDiv.addEventListener('touchstart', (e) => {
           startX = e.touches[0].clientX;
-          isSwiping = true;
-        }, { passive: true });
+        });
         
         contentDiv.addEventListener('touchmove', (e) => {
-          if (!isSwiping) return;
-          currentX = e.touches[0].clientX;
-          const diffX = currentX - startX;
+          if (!startX) return;
           
-          // If swiping left (negative diffX), show edit action
-          if (diffX < -20) {
-            if (activeSwipeItem && activeSwipeItem !== itemContainer) {
-              activeSwipeItem.classList.remove('swiped-left');
-              activeSwipeItem.classList.remove('swiped-right');
-            }
-            itemContainer.classList.remove('swiped-right');
-            itemContainer.classList.add('swiped-left');
-            activeSwipeItem = itemContainer;
-          } 
-          // If swiping right (positive diffX), show delete action
-          else if (diffX > 20) {
-            if (activeSwipeItem && activeSwipeItem !== itemContainer) {
-              activeSwipeItem.classList.remove('swiped-left');
-              activeSwipeItem.classList.remove('swiped-right');
-            }
-            itemContainer.classList.remove('swiped-left');
-            itemContainer.classList.add('swiped-right');
-            activeSwipeItem = itemContainer;
+          currentX = e.touches[0].clientX;
+          diffX = currentX - startX;
+          
+          // Only allow left swipe
+          if (diffX < 0) {
+            e.preventDefault();
+            itemContainer.style.transform = `translateX(${Math.max(diffX, -80)}px)`;
           }
-        }, { passive: true });
+        });
         
         contentDiv.addEventListener('touchend', () => {
-          isSwiping = false;
-        }, { passive: true });
+          if (!startX) return;
+          
+          // If swiped more than 40px, toggle swiped state
+          if (diffX < -40) {
+            // Close any previously swiped item
+            if (activeSwipeItem && activeSwipeItem !== itemContainer) {
+              activeSwipeItem.classList.remove('swiped');
+            }
+            
+            itemContainer.classList.add('swiped');
+            activeSwipeItem = itemContainer;
+          } else {
+            itemContainer.classList.remove('swiped');
+            if (activeSwipeItem === itemContainer) {
+              activeSwipeItem = null;
+            }
+          }
+          
+          itemContainer.style.transform = '';
+          startX = null;
+        });
         
-        // Add all elements to the item container
+        // Add to container
         itemContainer.appendChild(contentDiv);
-        itemContainer.appendChild(actionsLeftDiv);
-        itemContainer.appendChild(actionsRightDiv);
+        itemContainer.appendChild(actionsDiv);
         
-        // Add to table row (for non-mobile view)
+        // Create table row for the item
         const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>
-            <div class="expense-subcategory">${record.subcategory}</div>
-            <div class="expense-description">${record.description}</div>
-          </td>
-          <td>₹${record.amount.toFixed(2)}</td>
-        `;
-        
-        // For mobile view, add the swipeable item container
-        const mobileRow = document.createElement('tr');
-        const mobileCell = document.createElement('td');
-        mobileCell.colSpan = 3;
-        mobileCell.appendChild(itemContainer);
-        mobileRow.appendChild(mobileCell);
-        
-        // Add both desktop and mobile rows
+        const cell = document.createElement('td');
+        cell.colSpan = 2;
+        cell.style.padding = '0';
+        cell.appendChild(itemContainer);
+        row.appendChild(cell);
         tbody.appendChild(row);
-        tbody.appendChild(mobileRow);
       });
       
       table.appendChild(tbody);
@@ -1277,40 +1234,63 @@ function loadRecords() {
     recordsContainer.appendChild(dateGroup);
   }
   
-  // Update total display
   totalDisplay.textContent = `Total: ₹${grandTotal.toFixed(2)}`;
-}
-
-// Delete record by ID
-function deleteRecordById(id) {
-  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
-  records = records.filter(record => record.id != id);
-  localStorage.setItem("expenses", JSON.stringify(records));
-  
-  showToast("Expense deleted");
-  loadRecords();
 }
 
 // Edit record by ID
 function editRecordById(id) {
   let records = JSON.parse(localStorage.getItem("expenses") || "[]");
-  const record = records.find(r => r.id == id);
+  const recordIndex = records.findIndex(r => r.id == id);
   
-  if (!record) return;
+  if (recordIndex === -1) {
+    showToast("Record not found");
+    return;
+  }
   
-  // For simplicity, we'll just delete and re-add through voice
-  // In a real app, you'd have a proper edit form
-  deleteRecordById(id);
+  const record = records[recordIndex];
   
-  // Set the current category and subcategory
-  currentCategory = record.category;
-  currentSubcategory = record.subcategory;
+  // In a real app, you would show an edit form
+  // For this demo, we'll just show a prompt
+  const newAmount = parseFloat(prompt("Enter new amount:", record.amount));
   
-  // Show the subcategory view
-  showSubcategories(currentCategory);
+  if (!isNaN(newAmount) && newAmount > 0) {
+    records[recordIndex].amount = newAmount;
+    localStorage.setItem("expenses", JSON.stringify(records));
+    loadRecords();
+    showToast("Record updated");
+    
+    // Close the swipe actions
+    if (activeSwipeItem) {
+      activeSwipeItem.classList.remove('swiped');
+      activeSwipeItem = null;
+    }
+  } else {
+    showToast("Invalid amount");
+  }
+}
+
+// Delete record by ID
+function deleteRecordById(id) {
+  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  const recordIndex = records.findIndex(r => r.id == id);
   
-  // Show a toast message
-  showToast(`Editing: ${record.description} - ₹${record.amount}`);
+  if (recordIndex === -1) {
+    showToast("Record not found");
+    return;
+  }
+  
+  if (confirm("Are you sure you want to delete this record?")) {
+    records.splice(recordIndex, 1);
+    localStorage.setItem("expenses", JSON.stringify(records));
+    loadRecords();
+    showToast("Record deleted");
+    
+    // Close the swipe actions
+    if (activeSwipeItem) {
+      activeSwipeItem.classList.remove('swiped');
+      activeSwipeItem = null;
+    }
+  }
 }
 
 // Export to CSV
@@ -1343,7 +1323,7 @@ function exportToCSV() {
   showToast("CSV exported successfully");
 }
 
-// Show toast notification
+// Show toast message
 function showToast(message) {
   // Remove existing toast if any
   const existingToast = document.querySelector('.toast');
@@ -1355,22 +1335,32 @@ function showToast(message) {
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    z-index: 1000;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+  `;
   
-  // Add to document
   document.body.appendChild(toast);
   
-  // Remove after 3 seconds
+  // Remove toast after 3 seconds
   setTimeout(() => {
-    toast.style.animation = 'fadeOut 0.5s ease forwards';
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
-      }
-    }, 500);
+    if (toast.parentNode) {
+      toast.style.animation = 'fadeOut 0.3s ease forwards';
+      setTimeout(() => toast.remove(), 300);
+    }
   }, 3000);
 }
 
-// Initialize the app when the DOM is loaded
+// Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', initApp);
 </script>
 </body>
