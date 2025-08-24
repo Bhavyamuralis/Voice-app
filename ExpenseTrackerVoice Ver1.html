@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Tracker</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root {
+    --primary: #4361ee;
+    --secondary: #3f37c9;
+    --success: #4cc9f0;
+    --danger: #f72585;
+    --warning: #f8961e;
+    --info: #4895ef;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --gray: #6c757d;
+    --light-gray: #e9ecef;
+    --card-bg: #ffffff;
+    --body-bg: #f5f7fb;
+    --text-primary: #2d3748;
+    --text-secondary: #718096;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: var(--body-bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* Header */
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 16px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  /* Container */
+  .container {
+    padding: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .card:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Buttons */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 16px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn-category {
+    background: var(--primary);
+  }
+
+  .btn-subcategory {
+    background: var(--info);
+  }
+
+  .btn-back {
+    background: var(--secondary);
+  }
+
+  .btn-action {
+    padding: 12px 20px;
+    border-radius: 50px;
+    width: auto;
+    margin: 0 5px;
+  }
+
+  .btn-delete {
+    background: var(--danger);
+  }
+
+  .btn-edit {
+    background: var(--warning);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .switch, .lang-btn {
+    cursor: pointer;
+    padding: 10px 16px;
+    border-radius: 50px;
+    border: none;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+  }
+
+  .switch:active, .lang-btn:active {
+    transform: scale(0.95);
+  }
+
+  .switch {
+    background: var(--light);
+    color: var(--primary);
+  }
+
+  .switch.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .lang-btn {
+    background: var(--light);
+    color: var(--primary);
+  }
+
+  /* Table */
+  #recordsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  #recordsTable th, #recordsTable td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  #recordsTable th {
+    background: var(--light);
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  #recordsTable tr:last-child td {
+    border-bottom: none;
+  }
+
+  .total {
+    text-align: right;
+    font-weight: bold;
+    margin: 20px 5px;
+    font-size: 18px;
+    color: var(--text-primary);
+  }
+
+  /* Swipe animation */
+  .swipe-item {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform-origin: center;
+  }
+
+  .swipe-item.swipe-left {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  .swipe-item.swipe-right {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  /* Floating action button */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 90;
+    transition: all 0.3s ease;
+  }
+
+  .fab:active {
+    transform: scale(0.9);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes slideInLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.4s ease forwards;
+  }
+
+  .animate-slideInRight {
+    animation: slideInRight 0.4s ease forwards;
+  }
+
+  .animate-slideInLeft {
+    animation: slideInLeft 0.4s ease forwards;
+  }
+
+  /* Voice listening indicator */
+  .voice-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0;
+    padding: 16px;
+    background: var(--light);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .pulse-dot {
+    width: 12px;
+    height: 12px;
+    background: var(--danger);
+    border-radius: 50%;
+    margin-right: 12px;
+    animation: pulse 1.5s infinite;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+  }
+
+  .empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: var(--light-gray);
+  }
+
+  /* View transitions */
+  .view {
+    display: none;
+  }
+
+  .view.active {
+    display: block;
+    animation: fadeIn 0.4s ease;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 480px) {
+    .container {
+      padding: 12px;
+    }
+    
+    .card {
+      padding: 16px;
+    }
+    
+    #recordsTable th, #recordsTable td {
+      padding: 12px;
+    }
+    
+    .toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .switch, .lang-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  /* Ripple effect */
+  .ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple:after {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform .5s, opacity 1s;
+  }
+
+  .ripple:active:after {
+    transform: scale(0, 0);
+    opacity: .3;
+    transition: 0s;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>Expense Tracker</div>
+</header>
+
+<div class="toolbar">
+  <button class="lang-btn" id="langBtn">
+    <i class="fas fa-language"></i>
+    <span id="langText">Telugu</span>
+  </button>
+  <button class="switch" id="stayToggle">
+    <i class="fas fa-power-off"></i>
+    <span id="stayText">Stay OFF</span>
+  </button>
+</div>
+
+<div class="container">
+  <div class="view active" id="categoryView">
+    <div class="card">
+      <h3><i class="fas fa-folder-open"></i> Select Category</h3>
+      <div id="categoryButtons"></div>
+    </div>
+  </div>
+
+  <div class="view" id="subcategoryView">
+    <div class="card">
+      <h3 id="subcategoryTitle"><i class="fas fa-list"></i> Select Subcategory</h3>
+      <div id="subcategoryButtons"></div>
+      <button class="btn btn-back" onclick="showView('categoryView')">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+    </div>
+  </div>
+
+  <div class="view" id="voiceView">
+    <div class="card">
+      <h3 id="voiceTitle"><i class="fas fa-microphone"></i> Speak Now</h3>
+      <div class="voice-indicator">
+        <div class="pulse-dot"></div>
+        <div>Listening... Say something like "Milk 50"</div>
+      </div>
+      <button class="btn btn-back" onclick="showView('subcategoryView')">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+    </div>
+  </div>
+
+  <div class="view" id="recordsView">
+    <div class="card">
+      <h3><i class="fas fa-history"></i> Recent Expenses</h3>
+      <div id="recordsContainer">
+        <table id="recordsTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="total" id="totalDisplay">Total: ₹0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="fab" onclick="showView('categoryView')">
+  <i class="fas fa-plus"></i>
+</div>
+
+<script>
+// Data and State Management
+let categories = {
+  "Food": ["Breakfast", "Lunch", "Dinner", "Snacks", "Groceries"],
+  "Transport": ["Bus", "Auto", "Cab", "Fuel", "Parking"],
+  "Shopping": ["Clothes", "Electronics", "Essentials", "Gifts"],
+  "Bills": ["Electricity", "Water", "Mobile", "Internet", "Rent"],
+  "Entertainment": ["Movies", "Dining Out", "Games", "Streaming"]
+};
+
+let currentCategory = "";
+let currentSubcategory = "";
+let currentLang = "te-IN"; // default Telugu
+let stayOn = false;
+let speechRecognition = null;
+
+// DOM Elements
+const stayToggle = document.getElementById("stayToggle");
+const stayText = document.getElementById("stayText");
+const langBtn = document.getElementById("langBtn");
+const langText = document.getElementById("langText");
+const categoryView = document.getElementById("categoryView");
+const subcategoryView = document.getElementById("subcategoryView");
+const voiceView = document.getElementById("voiceView");
+const recordsView = document.getElementById("recordsView");
+const categoryButtons = document.getElementById("categoryButtons");
+const subcategoryButtons = document.getElementById("subcategoryButtons");
+const subcategoryTitle = document.getElementById("subcategoryTitle");
+const voiceTitle = document.getElementById("voiceTitle");
+const recordsTableBody = document.querySelector("#recordsTable tbody");
+const totalDisplay = document.getElementById("totalDisplay");
+
+// Initialize the app
+function initApp() {
+  // Set up event listeners
+  stayToggle.addEventListener("click", toggleStayMode);
+  langBtn.addEventListener("click", toggleLanguage);
+  
+  // Render categories
+  renderCategories();
+  
+  // Load records
+  loadRecords();
+  
+  // Show category view by default
+  showView('categoryView');
+}
+
+// Toggle stay mode
+function toggleStayMode() {
+  stayOn = !stayOn;
+  stayText.textContent = stayOn ? "Stay ON" : "Stay OFF";
+  stayToggle.classList.toggle("active", stayOn);
+}
+
+// Toggle language
+function toggleLanguage() {
+  currentLang = currentLang === "te-IN" ? "en-US" : "te-IN";
+  const langName = currentLang === "te-IN" ? "Telugu" : "English";
+  langText.textContent = langName;
+  
+  // Show feedback
+  showToast(`Language changed to ${langName}`);
+}
+
+// Show a specific view with animation
+function showView(viewId) {
+  // Hide all views
+  document.querySelectorAll('.view').forEach(view => {
+    view.classList.remove('active');
+  });
+  
+  // Show the selected view
+  const targetView = document.getElementById(viewId);
+  targetView.classList.add('active');
+  
+  // If showing records, reload them
+  if (viewId === 'recordsView') {
+    loadRecords();
+  }
+}
+
+// Render categories
+function renderCategories() {
+  categoryButtons.innerHTML = '';
+  
+  for (let cat in categories) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-category ripple';
+    btn.innerHTML = `<i class="fas fa-${getCategoryIcon(cat)}"></i> ${cat}`;
+    btn.onclick = () => showSubcategories(cat);
+    categoryButtons.appendChild(btn);
+  }
+  
+  // Add view records button
+  const viewRecordsBtn = document.createElement('button');
+  viewRecordsBtn.className = 'btn btn-back ripple';
+  viewRecordsBtn.innerHTML = `<i class="fas fa-history"></i> View Records`;
+  viewRecordsBtn.onclick = () => showView('recordsView');
+  categoryButtons.appendChild(viewRecordsBtn);
+}
+
+// Get icon for category
+function getCategoryIcon(category) {
+  const icons = {
+    "Food": "utensils",
+    "Transport": "bus",
+    "Shopping": "shopping-bag",
+    "Bills": "file-invoice-dollar",
+    "Entertainment": "film"
+  };
+  
+  return icons[category] || "folder";
+}
+
+// Show subcategories for a category
+function showSubcategories(cat) {
+  currentCategory = cat;
+  subcategoryTitle.innerHTML = `<i class="fas fa-${getCategoryIcon(cat)}"></i> ${cat} - Select Subcategory`;
+  subcategoryButtons.innerHTML = '';
+  
+  categories[cat].forEach(sub => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-subcategory ripple';
+    btn.innerHTML = `<i class="fas fa-${getSubcategoryIcon(sub)}"></i> ${sub}`;
+    btn.onclick = () => startVoice(sub);
+    subcategoryButtons.appendChild(btn);
+  });
+  
+  showView('subcategoryView');
+}
+
+// Get icon for subcategory
+function getSubcategoryIcon(subcategory) {
+  const icons = {
+    "Breakfast": "coffee",
+    "Lunch": "hamburger",
+    "Dinner": "utensils",
+    "Snacks": "cookie",
+    "Groceries": "shopping-basket",
+    "Bus": "bus",
+    "Auto": "auto-rickshaw",
+    "Cab": "taxi",
+    "Fuel": "gas-pump",
+    "Parking": "parking",
+    "Clothes": "tshirt",
+    "Electronics": "laptop",
+    "Essentials": "shopping-bag",
+    "Gifts": "gift",
+    "Electricity": "bolt",
+    "Water": "tint",
+    "Mobile": "mobile",
+    "Internet": "wifi",
+    "Rent": "home",
+    "Movies": "film",
+    "Dining Out": "utensils",
+    "Games": "gamepad",
+    "Streaming": "tv"
+  };
+  
+  return icons[subcategory] || "list";
+}
+
+// Start voice recognition
+function startVoice(subcat) {
+  currentSubcategory = subcat;
+  voiceTitle.innerHTML = `<i class="fas fa-microphone"></i> ${currentCategory} - ${subcat}`;
+  showView('voiceView');
+  
+  // Check if browser supports speech recognition
+  if (!('webkitSpeechRecognition' in window)) {
+    showToast("Speech recognition not supported in this browser");
+    return;
+  }
+  
+  // Initialize speech recognition
+  speechRecognition = new webkitSpeechRecognition();
+  speechRecognition.continuous = false;
+  speechRecognition.interimResults = false;
+  speechRecognition.lang = currentLang;
+  
+  speechRecognition.onstart = function() {
+    console.log("Speech recognition started");
+  };
+  
+  speechRecognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript.trim();
+    processVoiceInput(transcript);
+  };
+  
+  speechRecognition.onerror = function(event) {
+    console.error("Speech recognition error", event.error);
+    showToast("Error: " + event.error);
+    showView('subcategoryView');
+  };
+  
+  speechRecognition.onend = function() {
+    console.log("Speech recognition ended");
+  };
+  
+  // Start recognition
+  try {
+    speechRecognition.start();
+  } catch (error) {
+    showToast("Error starting speech recognition");
+    console.error("Error starting speech recognition:", error);
+  }
+  
+  // Set timeout to stop recognition after 10 seconds
+  setTimeout(() => {
+    if (speechRecognition) {
+      speechRecognition.stop();
+      if (voiceView.classList.contains('active')) {
+        showToast("Listening time out. Please try again.");
+        showView('subcategoryView');
+      }
+    }
+  }, 10000);
+}
+
+// Process voice input
+function processVoiceInput(transcript) {
+  // Parse the transcript to extract amount and description
+  const parts = transcript.split(" ");
+  let amount = 0;
+  let description = "";
+  
+  // Try to find the amount (last number in the transcript)
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const num = parseFloat(parts[i]);
+    if (!isNaN(num)) {
+      amount = num;
+      parts.splice(i, 1); // Remove the amount from parts
+      description = parts.join(" ").trim();
+      break;
+    }
+  }
+  
+  // If no amount found, try to find it in the middle
+  if (amount === 0) {
+    for (let i = 0; i < parts.length; i++) {
+      const num = parseFloat(parts[i]);
+      if (!isNaN(num)) {
+        amount = num;
+        parts.splice(i, 1); // Remove the amount from parts
+        description = parts.join(" ").trim();
+        break;
+      }
+    }
+  }
+  
+  // If still no amount found, show error
+  if (amount === 0) {
+    showToast("Could not detect amount. Please try again.");
+    showView('subcategoryView');
+    return;
+  }
+  
+  // If no description, use subcategory as description
+  if (!description) {
+    description = currentSubcategory;
+  }
+  
+  // Save the record
+  saveRecord(currentCategory, currentSubcategory, description, amount);
+  
+  // Show success message
+  showToast(`Added: ${description} - ₹${amount}`);
+  
+  // Return to appropriate view
+  if (stayOn) {
+    showView('subcategoryView');
+  } else {
+    showView('categoryView');
+  }
+}
+
+// Save record to localStorage
+function saveRecord(cat, subcat, desc, amt) {
+  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  
+  records.push({
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-IN'),
+    category: cat,
+    subcategory: subcat,
+    description: desc,
+    amount: amt
+  });
+  
+  localStorage.setItem("expenses", JSON.stringify(records));
+  loadRecords();
+}
+
+// Load records from localStorage
+function loadRecords() {
+  const records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  recordsTableBody.innerHTML = "";
+  
+  if (records.length === 0) {
+    recordsTableBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="empty-state">
+          <i class="fas fa-receipt"></i>
+          <div>No expenses recorded yet</div>
+        </td>
+      </tr>
+    `;
+    totalDisplay.textContent = "Total: ₹0";
+    return;
+  }
+  
+  let total = 0;
+  
+  records.forEach((record, index) => {
+    total += record.amount;
+    
+    const row = document.createElement('tr');
+    row.className = 'swipe-item';
+    row.innerHTML = `
+      <td>${record.date}</td>
+      <td>${record.category}</td>
+      <td>₹${record.amount}</td>
+    `;
+    
+    // Add click to view details
+    row.addEventListener('click', () => {
+      showRecordDetails(record);
+    });
+    
+    // Add swipe events
+    addSwipeEvents(row, index);
+    
+    recordsTableBody.appendChild(row);
+  });
+  
+  totalDisplay.textContent = `Total: ₹${total.toFixed(2)}`;
+}
+
+// Show record details
+function showRecordDetails(record) {
+  const message = `
+    Date: ${record.date}
+    Category: ${record.category}
+    Subcategory: ${record.subcategory}
+    Description: ${record.description}
+    Amount: ₹${record.amount}
+  `;
+  
+  alert(message.replace(/^\s+/gm, ''));
+}
+
+// Add swipe events to record row
+function addSwipeEvents(row, index) {
+  let startX = 0;
+  let currentX = 0;
+  let isSwiping = false;
+  
+  row.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    isSwiping = true;
+  });
+  
+  row.addEventListener('touchmove', (e) => {
+    if (!isSwiping) return;
+    currentX = e.touches[0].clientX;
+    
+    // Move the row while swiping
+    const diff = currentX - startX;
+    row.style.transform = `translateX(${diff}px)`;
+  });
+  
+  row.addEventListener('touchend', () => {
+    if (!isSwiping) return;
+    isSwiping = false;
+    
+    const diff = currentX - startX;
+    
+    // Reset position
+    row.style.transform = '';
+    
+    // If swipe distance is sufficient
+    if (Math.abs(diff) > 100) {
+      if (diff < 0) {
+        // Left swipe - delete
+        row.classList.add('swipe-left');
+        setTimeout(() => deleteRecord(index), 300);
+      } else {
+        // Right swipe - edit
+        row.classList.add('swipe-right');
+        setTimeout(() => editRecord(index), 300);
+      }
+    }
+  });
+}
+
+// Delete record
+function deleteRecord(index) {
+  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  const deletedRecord = records.splice(index, 1)[0];
+  localStorage.setItem("expenses", JSON.stringify(records));
+  loadRecords();
+  
+  showToast(`Deleted: ${deletedRecord.description} - ₹${deletedRecord.amount}`);
+}
+
+// Edit record
+function editRecord(index) {
+  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  const record = records[index];
+  
+  const newDesc = prompt("Edit Description", record.description);
+  if (newDesc === null) return;
+  
+  const newAmt = parseFloat(prompt("Edit Amount", record.amount));
+  if (isNaN(newAmt)) return;
+  
+  records[index].description = newDesc;
+  records[index].amount = newAmt;
+  localStorage.setItem("expenses", JSON.stringify(records));
+  loadRecords();
+  
+  showToast("Expense updated successfully");
+}
+
+// Show toast notification
+function showToast(message, duration = 3000) {
+  // Remove existing toast if any
+  const existingToast = document.getElementById('appToast');
+  if (existingToast) {
+    existingToast.remove();
+  }
+  
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.id = 'appToast';
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    z-index: 1000;
+    font-size: 14px;
+    animation: fadeIn 0.3s ease;
+  `;
+  
+  document.body.appendChild(toast);
+  
+  // Remove toast after duration
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, duration);
+}
+
+// Initialize the app when the page loads
+window.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>
