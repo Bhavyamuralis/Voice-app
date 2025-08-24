@@ -1,581 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Voice Expense Tracker</title>
-<style>
-  :root{
-    --bg:#0f172a;          /* slate-900 */
-    --card:#111827;        /* gray-900 */
-    --muted:#1f2937;       /* gray-800 */
-    --text:#e5e7eb;        /* gray-200 */
-    --soft:#94a3b8;        /* slate-400 */
-    --accent:#22c55e;      /* green-500 */
-    --danger:#ef4444;      /* red-500 */
-    --warn:#f59e0b;        /* amber-500 */
-    --info:#3b82f6;        /* blue-500 */
-    --round:18px;
-    --pad:14px;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Noto Sans",sans-serif;
-    background:linear-gradient(180deg,#0b1223 0%, #0f172a 60%, #0b1223 100%);
-    color:var(--text);
-  }
-  .wrap{
-    max-width:900px; margin:0 auto; padding:clamp(10px,2vw,20px);
-  }
-  header{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    margin-bottom:12px;
-  }
-  h1{font-size:1.25rem; margin:.25rem 0}
-  .sub{font-size:.8rem; color:var(--soft)}
-  .card{
-    background:var(--card); border:1px solid #1f2937; border-radius:var(--round);
-    box-shadow:0 8px 24px rgba(0,0,0,.35);
-  }
-  .pad{padding:var(--pad)}
-  .grid{
-    display:grid; gap:10px;
-    grid-template-columns:repeat(2,1fr);
-  }
-  @media (min-width:560px){ .grid{grid-template-columns:repeat(3,1fr);} }
-  @media (min-width:840px){ .grid{grid-template-columns:repeat(4,1fr);} }
-
-  /* Buttons */
-  .btn{
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    width:100%; padding:14px 12px; border:none; color:#0b1020; font-weight:700;
-    background:#e2e8f0; border-radius:14px; cursor:pointer; transition:transform .06s ease, filter .2s ease;
-    box-shadow:inset 0 -2px 0 rgba(0,0,0,.15), 0 10px 22px rgba(0,0,0,.25);
-    text-transform:capitalize;
-  }
-  .btn:active{transform:scale(.98)}
-  .btn.food{background:#fef3c7}       /* amber-100 */
-  .btn.transport{background:#dbeafe}  /* blue-100 */
-  .btn.shopping{background:#fce7f3}   /* pink-100 */
-  .btn.bills{background:#dcfce7}      /* green-100 */
-  .btn.other{background:#e5e7eb}      /* gray-200 */
-
-  .back{
-    background:transparent; color:var(--soft); border:1px dashed #334155; padding:8px 12px; border-radius:10px; cursor:pointer;
-  }
-
-  /* Table */
-  .table-wrap{overflow:auto}
-  table{width:100%; border-collapse:separate; border-spacing:0 8px; font-size:.95rem}
-  thead th{font-weight:700; color:var(--soft); text-align:left; padding:10px 8px}
-  tbody td{
-    background:var(--muted); padding:12px 8px; vertical-align:middle;
-    border-top:1px solid #293244; border-bottom:1px solid #0b1223;
-  }
-  tbody tr{position:relative; border-radius:12px; }
-  tbody tr td:first-child{border-top-left-radius:12px; border-bottom-left-radius:12px;}
-  tbody tr td:last-child{border-top-right-radius:12px; border-bottom-right-radius:12px;}
-  tfoot td{padding:14px 8px; color:#e2e8f0; font-weight:800}
-  .right{text-align:right}
-
-  /* Swipe affordances */
-  .swipe-layer{
-    position:absolute; inset:0; border-radius:12px; z-index:0; pointer-events:none;
-    display:flex; align-items:center; justify-content:space-between; padding:0 12px; opacity:.85;
-  }
-  .swipe-left{background:var(--danger)}
-  .swipe-right{background:var(--warn)}
-  .row-content{position:relative; z-index:1; transition:transform .15s ease}
-
-  /* Footer actions */
-  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-  .pill{
-    background:#0b1223; color:var(--soft); border:1px solid #223049; padding:8px 12px; border-radius:999px; font-size:.85rem;
-  }
-  .link{cursor:pointer; text-decoration:underline; color:#93c5fd}
-
-  /* Modal */
-  .modal{
-    position:fixed; inset:0; display:none; align-items:flex-end; justify-content:center; z-index:40;
-    background:rgba(2,6,23,.6);
-  }
-  .sheet{
-    width:100%; max-width:900px; background:var(--card); border-top-left-radius:22px; border-top-right-radius:22px;
-    padding:18px; box-shadow:0 -12px 30px rgba(0,0,0,.5);
-  }
-  .row{display:flex; gap:10px; margin:8px 0}
-  .row label{flex:0 0 110px; color:var(--soft)}
-  .row input, .row select{
-    flex:1; background:#0b1223; color:var(--text); border:1px solid #223049; border-radius:10px; padding:10px 12px; font-size:1rem;
-  }
-  .modal .btn{box-shadow:none}
-
-  /* Mic banner */
-  .mic-banner{
-    margin-top:12px; font-size:.9rem; color:#cbd5e1;
-  }
-  .badge{
-    display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:#0b1223; border:1px solid #223049; border-radius:999px;
-  }
-  .blink{animation: pulse 1.2s infinite}
-  @keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
-
-  .empty{
-    color:var(--soft); text-align:center; padding:16px; border:1px dashed #223049; border-radius:14px; background:#0b1223;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Expense Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 10px; background: #f5f5f5; }
+    h2 { text-align: center; }
+    .category, .subcategory, button {
+      width: 100%; padding: 12px; margin: 5px 0; border: none;
+      border-radius: 8px; font-size: 16px; cursor: pointer;
+    }
+    .category { background: #4caf50; color: white; }
+    .subcategory { background: #2196f3; color: white; }
+    #records { margin-top: 20px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: center; }
+    th { background: #333; color: white; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .total { font-weight: bold; background: #eee; }
+    #toggleReload {
+      display: block; width: 100%; padding: 10px; margin: 10px 0;
+      background: #ff9800; color: white; border: none; border-radius: 8px;
+      font-size: 16px; cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Voice Expense Tracker</h1>
-        <div class="sub">Tap → Subcategory → Speak: <em>“Milk 50”</em>. Last word = amount.</div>
-      </div>
-      <button id="clearAll" class="back" title="Clear all records">Clear</button>
-    </header>
+  <h2>Expense Tracker</h2>
+  <button id="toggleReload">Auto Reload: ON</button>
+  <div id="categories"></div>
+  <div id="subcategories"></div>
+  <div id="records"></div>
 
-    <!-- Category View -->
-    <section id="catView" class="card pad">
-      <h3 style="margin-top:0;">Categories</h3>
-      <div id="catGrid" class="grid"></div>
-    </section>
+  <script>
+    const categories = {
+      "Food": ["Breakfast", "Lunch", "Dinner", "Snacks"],
+      "Transport": ["Bus", "Train", "Taxi", "Fuel"],
+      "Shopping": ["Clothes", "Electronics", "Groceries"],
+      "Bills": ["Electricity", "Water", "Internet", "Mobile"]
+    };
 
-    <!-- Subcategory View -->
-    <section id="subView" class="card pad" style="display:none">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-        <h3 style="margin:0" id="subTitle">Choose Subcategory</h3>
-        <button id="backBtn" class="back">← Back</button>
-      </div>
-      <div id="subGrid" class="grid" style="margin-top:10px"></div>
-      <div id="micBanner" class="mic-banner" style="display:none">
-        <span class="badge"><span class="blink">●</span> Listening… say <strong>“description amount”</strong></span>
-      </div>
-    </section>
+    let selectedCategory = "";
+    let selectedSubcategory = "";
+    let autoReload = true; // default ON
 
-    <!-- Records -->
-    <section class="card pad" style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">Records</h3>
-      <div class="actions">
-        <span class="pill">Swipe ← to Delete</span>
-        <span class="pill">Swipe → to Edit</span>
-        <span class="pill">Speech lang: <code id="langBadge">te-IN</code></span>
-        <span id="exportBtn" class="link">Export JSON</span>
-      </div>
-      <div class="table-wrap" style="margin-top:12px">
-        <table id="recTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Category</th>
-              <th>Subcat</th>
-              <th>Description</th>
-              <th class="right">Amount</th>
-            </tr>
-          </thead>
-          <tbody id="recBody">
-            <!-- rows -->
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="4" class="right">Total</td>
-              <td class="right" id="totalCell">₹0</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </section>
-  </div>
-
-  <!-- Edit Sheet -->
-  <div id="editModal" class="modal" role="dialog" aria-modal="true">
-    <div class="sheet">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <strong>Edit Record</strong>
-        <button id="closeEdit" class="back">Close</button>
-      </div>
-      <div class="row"><label>Date</label><input id="eDate" type="date"></div>
-      <div class="row"><label>Category</label><input id="eCat" type="text" disabled></div>
-      <div class="row"><label>Subcategory</label><input id="eSub" type="text" disabled></div>
-      <div class="row"><label>Description</label><input id="eDesc" type="text" placeholder="What was it?"></div>
-      <div class="row"><label>Amount</label><input id="eAmt" type="number" step="0.01" min="0" inputmode="decimal"></div>
-      <div class="row" style="justify-content:flex-end">
-        <button id="saveEdit" class="btn" style="max-width:200px">Save Changes</button>
-      </div>
-    </div>
-  </div>
-
-<script>
-(() => {
-  // ======= Config =======
-  const SPEECH_LANG = 'te-IN'; // Telugu default. Change to 'en-IN' or any BCP-47 code if needed.
-  document.getElementById('langBadge').textContent = SPEECH_LANG;
-
-  const STORAGE_KEY = 'expenses_v1';
-
-  const CATEGORY_DATA = {
-    Food:       { class:'food',      subs:['Breakfast','Lunch','Dinner','Groceries','Snacks','Tea/Coffee','Milk'] },
-    Transport:  { class:'transport', subs:['Bus','Metro','Auto','Taxi','Fuel','Parking','Toll'] },
-    Shopping:   { class:'shopping',  subs:['Clothes','Electronics','Gadgets','Home','Gifts','Online'] },
-    Bills:      { class:'bills',     subs:['Electricity','Water','Internet','Mobile','Gas','Rent'] },
-    Other:      { class:'other',     subs:['Health','Education','Fees','Entertainment','Charity','Misc'] },
-  };
-
-  // ======= State =======
-  let currentCategory = null;
-  let currentSubcategory = null;
-  let editIndex = null; // index in array for editing
-
-  // ======= DOM =======
-  const catView = document.getElementById('catView');
-  const subView = document.getElementById('subView');
-  const catGrid = document.getElementById('catGrid');
-  const subGrid = document.getElementById('subGrid');
-  const subTitle = document.getElementById('subTitle');
-  const backBtn = document.getElementById('backBtn');
-  const micBanner = document.getElementById('micBanner');
-  const clearAllBtn = document.getElementById('clearAll');
-  const exportBtn = document.getElementById('exportBtn');
-
-  const recBody = document.getElementById('recBody');
-  const totalCell = document.getElementById('totalCell');
-
-  const editModal = document.getElementById('editModal');
-  const closeEdit = document.getElementById('closeEdit');
-  const eDate = document.getElementById('eDate');
-  const eCat  = document.getElementById('eCat');
-  const eSub  = document.getElementById('eSub');
-  const eDesc = document.getElementById('eDesc');
-  const eAmt  = document.getElementById('eAmt');
-  const saveEdit = document.getElementById('saveEdit');
-
-  // ======= Helpers =======
-  const fmtMoney = (n) => {
-    const val = Number(n || 0);
-    return new Intl.NumberFormat('en-IN', { maximumFractionDigits:2 }).format(val);
-  };
-  const todayISO = () => new Date().toISOString().slice(0,10);
-
-  const getData = () => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { return []; }
-  };
-  const setData = (arr) => localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-
-  function renderCategories(){
-    currentCategory = null; currentSubcategory = null;
-    subView.style.display = 'none';
-    micBanner.style.display = 'none';
-    catView.style.display = 'block';
-    catGrid.innerHTML = '';
-    Object.entries(CATEGORY_DATA).forEach(([name, cfg]) => {
-      const b = document.createElement('button');
-      b.className = `btn ${cfg.class}`;
-      b.textContent = name;
-      b.onclick = () => openSubcats(name);
-      catGrid.appendChild(b);
-    });
-  }
-
-  function openSubcats(category){
-    currentCategory = category;
-    subTitle.textContent = `Choose Subcategory – ${category}`;
-    subGrid.innerHTML = '';
-    CATEGORY_DATA[category].subs.forEach(s => {
-      const b = document.createElement('button');
-      b.className = `btn ${CATEGORY_DATA[category].class}`;
-      b.textContent = s;
-      b.onclick = () => startVoiceFor(category, s);
-      subGrid.appendChild(b);
-    });
-    catView.style.display = 'none';
-    subView.style.display = 'block';
-  }
-
-  backBtn.addEventListener('click', renderCategories);
-
-  // ======= Speech Recognition =======
-  function startVoiceFor(category, subcat){
-    currentSubcategory = subcat;
-
-    const SR = window.webkitSpeechRecognition;
-    if(!SR){
-      alert('Speech recognition not supported in this browser. Please use Chrome on Android/desktop.');
-      return;
+    // Render categories
+    function showCategories() {
+      document.getElementById("categories").innerHTML = "";
+      document.getElementById("subcategories").innerHTML = "";
+      for (let cat in categories) {
+        let btn = document.createElement("button");
+        btn.innerText = cat;
+        btn.className = "category";
+        btn.onclick = () => showSubcategories(cat);
+        document.getElementById("categories").appendChild(btn);
+      }
     }
 
-    const rec = new SR();
-    rec.lang = SPEECH_LANG;
-    rec.continuous = false;
-    rec.interimResults = false;
-
-    let heard = '';
-
-    micBanner.style.display = 'block';
-    try { rec.start(); } catch(e) { /* ignore duplicate starts */ }
-
-    rec.onresult = (ev) => {
-      heard = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim();
-    };
-    rec.onerror = (e) => {
-      micBanner.style.display = 'none';
-      alert('Mic error: ' + (e.error || 'unknown'));
-    };
-    rec.onend = () => {
-      micBanner.style.display = 'none';
-      if(!heard) return;
-      const {desc, amount} = parseSpoken(heard);
-      if(amount == null || isNaN(amount)){
-        alert('Could not detect amount. Please say: "description amount", e.g., "Milk 50".');
-        return;
-      }
-      saveRecord({
-        date: todayISO(),
-        category,
-        subcategory: subcat,
-        description: desc || '(no description)',
-        amount: Number(amount)
+    // Render subcategories
+    function showSubcategories(category) {
+      selectedCategory = category;
+      document.getElementById("subcategories").innerHTML = "";
+      categories[category].forEach(sub => {
+        let btn = document.createElement("button");
+        btn.innerText = sub;
+        btn.className = "subcategory";
+        btn.onclick = () => startVoiceInput(sub);
+        document.getElementById("subcategories").appendChild(btn);
       });
-      renderTable();
-      renderCategories(); // auto return to categories after save
-    };
-  }
-
-  function parseSpoken(s){
-    // Normalize: replace commas with space, collapse spaces
-    const cleaned = s.replace(/[,\u0964\u0965]/g, ' ').replace(/\s+/g,' ').trim();
-    if(!cleaned) return {desc:'', amount:null};
-    const parts = cleaned.split(' ');
-    const last = parts[parts.length-1].replace(/[^\d.\-]/g,''); // keep digits, dot, minus
-    const amount = parseFloat(last);
-    const desc = parts.slice(0, -1).join(' ').trim();
-    return {desc, amount};
-  }
-
-  // ======= Data ops =======
-  function saveRecord(rec){
-    const arr = getData();
-    arr.push(rec);
-    setData(arr);
-  }
-  function deleteRecord(idx){
-    const arr = getData();
-    arr.splice(idx,1);
-    setData(arr);
-    renderTable();
-  }
-  function openEdit(idx){
-    const arr = getData();
-    const r = arr[idx];
-    if(!r) return;
-    editIndex = idx;
-    eDate.value = r.date;
-    eCat.value  = r.category;
-    eSub.value  = r.subcategory;
-    eDesc.value = r.description;
-    eAmt.value  = r.amount;
-    editModal.style.display = 'flex';
-  }
-  function closeEditModal(){ editModal.style.display = 'none'; editIndex = null; }
-  closeEdit.addEventListener('click', closeEditModal);
-  editModal.addEventListener('click', (e)=>{ if(e.target === editModal) closeEditModal(); });
-
-  saveEdit.addEventListener('click', ()=>{
-    const idx = editIndex;
-    if(idx == null) return;
-    const arr = getData();
-    const r = arr[idx];
-    r.date = eDate.value || r.date;
-    r.description = eDesc.value || '';
-    r.amount = Number(eAmt.value || 0);
-    setData(arr);
-    renderTable();
-    closeEditModal();
-  });
-
-  clearAllBtn.addEventListener('click', ()=>{
-    if(confirm('Clear all records?')){ localStorage.removeItem(STORAGE_KEY); renderTable(); }
-  });
-
-  exportBtn.addEventListener('click', ()=>{
-    const data = getData();
-    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'expenses.json'; a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  // ======= Table render + swipe =======
-  function renderTable(){
-    const arr = getData();
-    recBody.innerHTML = '';
-    if(arr.length === 0){
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 5;
-      td.innerHTML = '<div class="empty">No records yet. Add one by selecting a subcategory and speaking “description amount”.</div>';
-      tr.appendChild(td); recBody.appendChild(tr);
-      totalCell.textContent = '₹0';
-      return;
     }
 
-    let total = 0;
-    arr.forEach((r, idx)=>{
-      total += Number(r.amount||0);
+    // Start mic input
+    function startVoiceInput(subcategory) {
+      selectedSubcategory = subcategory;
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "te-IN"; // Telugu default
+      recognition.start();
 
-      const tr = document.createElement('tr');
-      tr.dataset.index = idx;
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript.trim();
+        const parts = transcript.split(" ");
+        const amount = parseFloat(parts.pop().replace(/[^0-9.]/g, ""));
+        const description = parts.join(" ");
+        if (!isNaN(amount)) {
+          saveRecord(description, amount);
+        } else {
+          alert("Couldn't detect amount. Please try again.");
+        }
+      };
+    }
 
-      // background swipe layers
-      const leftBg = document.createElement('div');
-      leftBg.className = 'swipe-layer swipe-left';
-      leftBg.innerHTML = '<span style="margin-left:8px">Delete</span><span></span>';
-
-      const rightBg = document.createElement('div');
-      rightBg.className = 'swipe-layer swipe-right';
-      rightBg.innerHTML = '<span></span><span style="margin-right:8px">Edit</span>';
-
-      const row = document.createElement('tr');
-      const rowInner = document.createElement('tr'); // placeholder (not used)
-      // Real row content container:
-      const rowContent = document.createElement('div');
-      rowContent.className = 'row-content';
-
-      // Build cells
-      const tds = [
-        r.date,
-        r.category,
-        r.subcategory,
-        r.description,
-        `<div class="right">₹${fmtMoney(r.amount)}</div>`
-      ];
-
-      // We'll create a single row with 5 cells
-      const tr2 = document.createElement('tr'); // visual row
-      tr2.appendChild(tdWithLayers(leftBg, rightBg));
-
-      // Now actual cells:
-      const cells = tds.map(html => {
-        const td = document.createElement('td');
-        td.innerHTML = html;
-        return td;
-      });
-
-      // Put cells in a table row that will be moved during swipe:
-      const trContent = document.createElement('tr'); // not used (we'll move a wrapper)
-      // Instead, we append cells directly to a nested table-less container approach:
-      // Simpler: use a standard row and translate the whole row via transform.
-      // We'll attach swipe handlers to <tr> itself and use a .row-content wrapper inside each <td>.
-      // To keep DOM simple, we’ll just attach to tr and set style.transform on each cell sibling.
-
-      // Rebuild properly:
-      const trReal = document.createElement('tr');
-      trReal.dataset.index = idx;
-
-      // Add swipe layers as separate row overlay using position:absolute on the <tr> container:
-      // We need a wrapper; switch approach: Use a single <tr>, but inside first cell place both layers absolutely positioned covering the row via CSS on <tr>. Easiest is to place them as siblings to a full-width cell container.
-
-      // Simpler solution: Create a container DIV that overlays the row using CSS position:relative on tr is tricky.
-      // We'll implement swipe on <tr> and visually move its cells; the background hint will be simulated by box-shadow + gradient based on direction.
-      // To still show text "Delete/Edit", we add :before content? Not possible inline. Alternate: Add two absolutely-positioned DIVs to recBody just before the row won't bind well.
-
-      // → Revised: We'll create one extra hidden cell that spans all columns and contains the swipe layers; then place the content row on top (position:relative).
-    });
-
-    // Because the above turned complex, rebuild rows cleanly:
-    recBody.innerHTML = '';
-    arr.forEach((r, idx)=>{
-      const tr = document.createElement('tr');
-      tr.dataset.index = idx;
-      tr.style.position = 'relative';
-
-      // swipe background layers
-      const leftBg = document.createElement('div');
-      leftBg.className = 'swipe-layer swipe-left';
-      leftBg.textContent = 'Delete';
-
-      const rightBg = document.createElement('div');
-      rightBg.className = 'swipe-layer swipe-right';
-      rightBg.textContent = 'Edit';
-
-      tr.appendChild(makeCell(r.date));
-      tr.appendChild(makeCell(r.category));
-      tr.appendChild(makeCell(r.subcategory));
-      tr.appendChild(makeCell(r.description));
-      tr.appendChild(makeCell(`<div class="right">₹${fmtMoney(r.amount)}</div>`, true));
-
-      // insert layers visually beneath
-      tr.prepend(leftBg);
-      tr.prepend(rightBg);
-
-      // attach swipe handlers
-      attachSwipe(tr, idx);
-
-      recBody.appendChild(tr);
-    });
-
-    totalCell.textContent = '₹' + fmtMoney(total);
-  }
-
-  function makeCell(html, isHTML=false){
-    const td = document.createElement('td');
-    if(isHTML) td.innerHTML = html; else td.textContent = html;
-    return td;
-  }
-
-  function attachSwipe(tr, idx){
-    let startX = 0, currentX = 0, dragging = false;
-
-    const applyTransform = (dx) => {
-      // translate entire row visually
-      tr.style.transform = `translateX(${dx}px)`;
-      tr.style.transition = 'transform 0s';
-    };
-    const resetTransform = () => {
-      tr.style.transition = 'transform .15s ease';
-      tr.style.transform = 'translateX(0px)';
-    };
-
-    const onStart = (clientX) => { dragging = true; startX = clientX; currentX = clientX; };
-    const onMove  = (clientX) => {
-      if(!dragging) return;
-      const dx = clientX - startX;
-      currentX = clientX;
-      applyTransform(dx);
-    };
-    const onEnd = () => {
-      if(!dragging) return;
-      const dx = currentX - startX;
-      dragging = false;
-      const THRESH = 80; // px
-      if(dx <= -THRESH){
-        // swipe left -> delete
-        if(confirm('Delete this record?')) deleteRecord(idx);
-        else resetTransform();
-      } else if(dx >= THRESH){
-        // swipe right -> edit
-        resetTransform();
-        openEdit(idx);
-      } else {
-        resetTransform();
+    // Save record
+    function saveRecord(description, amount) {
+      const today = new Date().toISOString().split("T")[0];
+      const record = { date: today, category: selectedCategory, subcategory: selectedSubcategory, description, amount };
+      let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+      records.push(record);
+      localStorage.setItem("expenses", JSON.stringify(records));
+      renderRecords();
+      // auto reload only if toggle is ON
+      if (autoReload) {
+        showCategories();
       }
+    }
+
+    // Show table
+    function renderRecords() {
+      let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+      let html = "<table><tr><th>Date</th><th>Category</th><th>Subcategory</th><th>Description</th><th>Amount</th></tr>";
+      let total = 0;
+      records.forEach((r, i) => {
+        html += `<tr data-index="${i}">
+          <td>${r.date}</td>
+          <td>${r.category}</td>
+          <td>${r.subcategory}</td>
+          <td>${r.description}</td>
+          <td>${r.amount}</td>
+        </tr>`;
+        total += parseFloat(r.amount);
+      });
+      html += `<tr class="total"><td colspan="4">Total</td><td>${total}</td></tr></table>`;
+      document.getElementById("records").innerHTML = html;
+
+      // Swipe actions
+      document.querySelectorAll("#records tr").forEach(row => {
+        let startX = 0;
+        row.addEventListener("touchstart", e => startX = e.touches[0].clientX);
+        row.addEventListener("touchend", e => {
+          let endX = e.changedTouches[0].clientX;
+          let index = row.getAttribute("data-index");
+          if (!index) return;
+          if (startX - endX > 50) { // left swipe delete
+            deleteRecord(index);
+          } else if (endX - startX > 50) { // right swipe edit
+            editRecord(index);
+          }
+        });
+      });
+    }
+
+    // Delete record
+    function deleteRecord(index) {
+      let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+      records.splice(index, 1);
+      localStorage.setItem("expenses", JSON.stringify(records));
+      renderRecords();
+    }
+
+    // Edit record
+    function editRecord(index) {
+      let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+      let rec = records[index];
+      let newDesc = prompt("Edit description", rec.description);
+      let newAmt = prompt("Edit amount", rec.amount);
+      if (newDesc !== null && newAmt !== null && !isNaN(newAmt)) {
+        records[index].description = newDesc;
+        records[index].amount = parseFloat(newAmt);
+        localStorage.setItem("expenses", JSON.stringify(records));
+        renderRecords();
+      }
+    }
+
+    // Toggle button
+    document.getElementById("toggleReload").onclick = () => {
+      autoReload = !autoReload;
+      document.getElementById("toggleReload").innerText = `Auto Reload: ${autoReload ? "ON" : "OFF"}`;
     };
 
-    tr.addEventListener('touchstart', (e)=> onStart(e.touches[0].clientX), {passive:true});
-    tr.addEventListener('touchmove', (e)=> onMove(e.touches[0].clientX), {passive:true});
-    tr.addEventListener('touchend', onEnd);
-
-    // Also support mouse (desktop)
-    tr.addEventListener('mousedown', (e)=> onStart(e.clientX));
-    window.addEventListener('mousemove', (e)=> dragging && onMove(e.clientX));
-    window.addEventListener('mouseup', onEnd);
-  }
-
-  // ======= Init =======
-  renderCategories();
-  renderTable();
-})();
-</script>
+    showCategories();
+    renderRecords();
+  </script>
 </body>
 </html>
