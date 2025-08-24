@@ -1,174 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Expense Tracker</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 10px; background: #f5f5f5; }
-    h2 { text-align: center; }
-    .category, .subcategory, button {
-      width: 100%; padding: 12px; margin: 5px 0; border: none;
-      border-radius: 8px; font-size: 16px; cursor: pointer;
-    }
-    .category { background: #4caf50; color: white; }
-    .subcategory { background: #2196f3; color: white; }
-    #records { margin-top: 20px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; background: white; }
-    th, td { padding: 8px; border: 1px solid #ddd; text-align: center; }
-    th { background: #333; color: white; }
-    tr:nth-child(even) { background: #f9f9f9; }
-    .total { font-weight: bold; background: #eee; }
-    #toggleReload {
-      display: block; width: 100%; padding: 10px; margin: 10px 0;
-      background: #ff9800; color: white; border: none; border-radius: 8px;
-      font-size: 16px; cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Tracker</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+  header { background: #4CAF50; color: white; padding: 12px; text-align: center; font-size: 20px; }
+  .container { padding: 10px; }
+  .btn { display: block; width: 100%; padding: 15px; margin: 8px 0;
+         border: none; border-radius: 10px; font-size: 18px; color: white; cursor: pointer; }
+  .category { background: #2196F3; }
+  .subcategory { background: #FF9800; }
+  .back-btn { background: #9C27B0; }
+  #recordsTable { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; }
+  #recordsTable th, #recordsTable td { padding: 10px; border-bottom: 1px solid #ddd; text-align: center; }
+  #recordsTable th { background: #eee; }
+  .total { text-align: right; font-weight: bold; margin: 12px 5px; font-size: 18px; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 10px; }
+  .switch, .lang-btn { cursor: pointer; padding: 8px 15px; border-radius: 20px; border: none; }
+  .switch { background: #607D8B; color: white; }
+  .lang-btn { background: #795548; color: white; }
+  .swipe { transition: transform 0.3s ease; }
+</style>
 </head>
 <body>
-  <h2>Expense Tracker</h2>
-  <button id="toggleReload">Auto Reload: ON</button>
-  <div id="categories"></div>
-  <div id="subcategories"></div>
-  <div id="records"></div>
+<header>Expense Tracker</header>
 
-  <script>
-    const categories = {
-      "Food": ["Breakfast", "Lunch", "Dinner", "Snacks"],
-      "Transport": ["Bus", "Train", "Taxi", "Fuel"],
-      "Shopping": ["Clothes", "Electronics", "Groceries"],
-      "Bills": ["Electricity", "Water", "Internet", "Mobile"]
-    };
+<div class="toolbar">
+  <button class="lang-btn" id="langBtn">Language: Telugu</button>
+  <button class="switch" id="stayToggle">Stay ON</button>
+</div>
 
-    let selectedCategory = "";
-    let selectedSubcategory = "";
-    let autoReload = true; // default ON
+<div class="container" id="categoryView"></div>
+<div class="container" id="subcategoryView" style="display:none"></div>
+<div class="container" id="recordsView">
+  <h3>Records</h3>
+  <table id="recordsTable">
+    <thead>
+      <tr>
+        <th>Date</th><th>Category</th><th>Subcategory</th><th>Description</th><th>Amount</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div class="total" id="totalDisplay">Total: 0</div>
+</div>
 
-    // Render categories
-    function showCategories() {
-      document.getElementById("categories").innerHTML = "";
-      document.getElementById("subcategories").innerHTML = "";
-      for (let cat in categories) {
-        let btn = document.createElement("button");
-        btn.innerText = cat;
-        btn.className = "category";
-        btn.onclick = () => showSubcategories(cat);
-        document.getElementById("categories").appendChild(btn);
-      }
+<script>
+let categories = {
+  "Food": ["Breakfast", "Lunch", "Dinner", "Snacks"],
+  "Transport": ["Bus", "Auto", "Cab", "Fuel"],
+  "Shopping": ["Clothes", "Groceries", "Electronics"],
+  "Bills": ["Electricity", "Water", "Mobile", "Internet"]
+};
+
+let currentCategory = "";
+let currentLang = "te-IN"; // default Telugu
+let stayOn = false;
+
+document.getElementById("stayToggle").addEventListener("click", () => {
+  stayOn = !stayOn;
+  document.getElementById("stayToggle").innerText = stayOn ? "Stay ON" : "Stay OFF";
+});
+
+document.getElementById("langBtn").addEventListener("click", () => {
+  currentLang = currentLang === "te-IN" ? "en-US" : "te-IN";
+  document.getElementById("langBtn").innerText = "Language: " + (currentLang === "te-IN" ? "Telugu" : "English");
+});
+
+function showCategories() {
+  let html = "<h3>Select Category</h3>";
+  for (let cat in categories) {
+    html += `<button class="btn category" onclick="showSubcategories('${cat}')">${cat}</button>`;
+  }
+  document.getElementById("categoryView").innerHTML = html;
+  document.getElementById("categoryView").style.display = "block";
+  document.getElementById("subcategoryView").style.display = "none";
+}
+function showSubcategories(cat) {
+  currentCategory = cat;
+  let html = `<h3>${cat} - Select Subcategory</h3>`;
+  categories[cat].forEach(sub => {
+    html += `<button class="btn subcategory" onclick="startVoice('${sub}')">${sub}</button>`;
+  });
+  html += `<button class="btn back-btn" onclick="showCategories()">⬅ Back</button>`;
+  document.getElementById("subcategoryView").innerHTML = html;
+  document.getElementById("subcategoryView").style.display = "block";
+  document.getElementById("categoryView").style.display = "none";
+}
+
+function startVoice(subcat) {
+  let recognition = new webkitSpeechRecognition();
+  recognition.lang = currentLang;
+  recognition.start();
+
+  recognition.onresult = function(e) {
+    let transcript = e.results[0][0].transcript.trim();
+    let parts = transcript.split(" ");
+    let amount = parseFloat(parts.pop()) || 0;
+    let description = parts.join(" ");
+    saveRecord(currentCategory, subcat, description, amount);
+    if (!stayOn) showCategories();
+  };
+}
+
+function saveRecord(cat, subcat, desc, amt) {
+  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  records.push({date: new Date().toLocaleDateString(), category: cat, subcategory: subcat, description: desc, amount: amt});
+  localStorage.setItem("expenses", JSON.stringify(records));
+  loadRecords();
+}
+
+function loadRecords() {
+  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  let tbody = document.querySelector("#recordsTable tbody");
+  tbody.innerHTML = "";
+  let total = 0;
+  records.forEach((r, i) => {
+    total += r.amount;
+    let tr = document.createElement("tr");
+    tr.classList.add("swipe");
+    tr.innerHTML = `<td>${r.date}</td><td>${r.category}</td><td>${r.subcategory}</td><td>${r.description}</td><td>${r.amount}</td>`;
+    addSwipeEvents(tr, i);
+    tbody.appendChild(tr);
+  });
+  document.getElementById("totalDisplay").innerText = "Total: " + total;
+}
+
+function addSwipeEvents(row, index) {
+  let startX = 0;
+  row.addEventListener("touchstart", e => startX = e.touches[0].clientX);
+  row.addEventListener("touchend", e => {
+    let diff = e.changedTouches[0].clientX - startX;
+    if (diff < -50) { // left swipe
+      deleteRecord(index);
+    } else if (diff > 50) { // right swipe
+      editRecord(index);
     }
+  });
+}
 
-    // Render subcategories
-    function showSubcategories(category) {
-      selectedCategory = category;
-      document.getElementById("subcategories").innerHTML = "";
-      categories[category].forEach(sub => {
-        let btn = document.createElement("button");
-        btn.innerText = sub;
-        btn.className = "subcategory";
-        btn.onclick = () => startVoiceInput(sub);
-        document.getElementById("subcategories").appendChild(btn);
-      });
-    }
+function deleteRecord(i) {
+  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  records.splice(i, 1);
+  localStorage.setItem("expenses", JSON.stringify(records));
+  loadRecords();
+}
 
-    // Start mic input
-    function startVoiceInput(subcategory) {
-      selectedSubcategory = subcategory;
-      const recognition = new webkitSpeechRecognition();
-      recognition.lang = "te-IN"; // Telugu default
-      recognition.start();
+function editRecord(i) {
+  let records = JSON.parse(localStorage.getItem("expenses") || "[]");
+  let rec = records[i];
+  let newDesc = prompt("Edit Description", rec.description);
+  let newAmt = parseFloat(prompt("Edit Amount", rec.amount)) || rec.amount;
+  records[i].description = newDesc;
+  records[i].amount = newAmt;
+  localStorage.setItem("expenses", JSON.stringify(records));
+  loadRecords();
+}
 
-      recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript.trim();
-        const parts = transcript.split(" ");
-        const amount = parseFloat(parts.pop().replace(/[^0-9.]/g, ""));
-        const description = parts.join(" ");
-        if (!isNaN(amount)) {
-          saveRecord(description, amount);
-        } else {
-          alert("Couldn't detect amount. Please try again.");
-        }
-      };
-    }
-
-    // Save record
-    function saveRecord(description, amount) {
-      const today = new Date().toISOString().split("T")[0];
-      const record = { date: today, category: selectedCategory, subcategory: selectedSubcategory, description, amount };
-      let records = JSON.parse(localStorage.getItem("expenses") || "[]");
-      records.push(record);
-      localStorage.setItem("expenses", JSON.stringify(records));
-      renderRecords();
-      // auto reload only if toggle is ON
-      if (autoReload) {
-        showCategories();
-      }
-    }
-
-    // Show table
-    function renderRecords() {
-      let records = JSON.parse(localStorage.getItem("expenses") || "[]");
-      let html = "<table><tr><th>Date</th><th>Category</th><th>Subcategory</th><th>Description</th><th>Amount</th></tr>";
-      let total = 0;
-      records.forEach((r, i) => {
-        html += `<tr data-index="${i}">
-          <td>${r.date}</td>
-          <td>${r.category}</td>
-          <td>${r.subcategory}</td>
-          <td>${r.description}</td>
-          <td>${r.amount}</td>
-        </tr>`;
-        total += parseFloat(r.amount);
-      });
-      html += `<tr class="total"><td colspan="4">Total</td><td>${total}</td></tr></table>`;
-      document.getElementById("records").innerHTML = html;
-
-      // Swipe actions
-      document.querySelectorAll("#records tr").forEach(row => {
-        let startX = 0;
-        row.addEventListener("touchstart", e => startX = e.touches[0].clientX);
-        row.addEventListener("touchend", e => {
-          let endX = e.changedTouches[0].clientX;
-          let index = row.getAttribute("data-index");
-          if (!index) return;
-          if (startX - endX > 50) { // left swipe delete
-            deleteRecord(index);
-          } else if (endX - startX > 50) { // right swipe edit
-            editRecord(index);
-          }
-        });
-      });
-    }
-
-    // Delete record
-    function deleteRecord(index) {
-      let records = JSON.parse(localStorage.getItem("expenses") || "[]");
-      records.splice(index, 1);
-      localStorage.setItem("expenses", JSON.stringify(records));
-      renderRecords();
-    }
-
-    // Edit record
-    function editRecord(index) {
-      let records = JSON.parse(localStorage.getItem("expenses") || "[]");
-      let rec = records[index];
-      let newDesc = prompt("Edit description", rec.description);
-      let newAmt = prompt("Edit amount", rec.amount);
-      if (newDesc !== null && newAmt !== null && !isNaN(newAmt)) {
-        records[index].description = newDesc;
-        records[index].amount = parseFloat(newAmt);
-        localStorage.setItem("expenses", JSON.stringify(records));
-        renderRecords();
-      }
-    }
-
-    // Toggle button
-    document.getElementById("toggleReload").onclick = () => {
-      autoReload = !autoReload;
-      document.getElementById("toggleReload").innerText = `Auto Reload: ${autoReload ? "ON" : "OFF"}`;
-    };
-
-    showCategories();
-    renderRecords();
-  </script>
+showCategories();
+loadRecords();
+</script>
 </body>
 </html>
